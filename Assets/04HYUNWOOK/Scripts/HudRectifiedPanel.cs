@@ -19,7 +19,8 @@ namespace RacingUI
                 ? new[] { new Vector2(1438,110), new Vector2(1785,89), new Vector2(1795,308), new Vector2(1448,329) }
                 : new[] { new Vector2(128,98), new Vector2(477,116), new Vector2(469,310), new Vector2(120,292) };
             var mesh = context.Allocate(4, 6, texture);
-            Rect uv = mesh.uvRegion;
+            // Unity 6 remaps normalized UVs to the texture's atlas region automatically.
+            Rect uv = new Rect(0, 0, 1, 1);
             var r = contentRect;
             Vector2[] points = { new Vector2(r.xMin,r.yMin),new Vector2(r.xMax,r.yMin),new Vector2(r.xMax,r.yMax),new Vector2(r.xMin,r.yMax) };
             for (int i=0;i<4;i++)

@@ -15,7 +15,10 @@ public sealed class ProgressiveTireSmokeControllerEditor : Editor
         var prefab=AssetDatabase.LoadAssetAtPath<GameObject>(PrefabPath);if(!prefab){Debug.LogError("Tire Smoke prefab not found: "+PrefabPath);return;}
         var instance=(GameObject)PrefabUtility.InstantiatePrefab(prefab,vehicle.gameObject.scene);Undo.RegisterCreatedObjectUndo(instance,"Add Tire Smoke Rig");
         Undo.SetTransformParent(instance.transform,vehicle,"Parent Tire Smoke Rig");instance.transform.SetLocalPositionAndRotation(Vector3.zero,Quaternion.identity);instance.name="TireSmokeRig";
-        var controller=instance.GetComponent<ProgressiveTireSmokeController>();controller.vehicleRoot=vehicle;AutoBind(controller);Selection.activeGameObject=instance;
+        var controller=instance.GetComponent<ProgressiveTireSmokeController>();controller.vehicleRoot=vehicle;AutoBind(controller);
+        // Do not replace the current Inspector target here. Unity can rebuild prefab-instance
+        // objects during the same event, leaving GameObjectInspector with a destroyed target.
+        EditorGUIUtility.PingObject(instance);
     }
 
     public override void OnInspectorGUI()
@@ -35,9 +38,8 @@ public sealed class ProgressiveTireSmokeControllerEditor : Editor
         EditorGUILayout.Space();
         EditorGUILayout.LabelField("차량에 빠르게 설치",EditorStyles.boldLabel);
         if(GUILayout.Button("뒷바퀴 자동 연결 + 접지 앵커 만들기"))AutoBind(c);
-        if(GUILayout.Button("연결 상태 선택/확인")){
-            Selection.objects=new UnityEngine.Object[]{c.vehicleRoot,c.rearLeft.wheel,c.rearRight.wheel,c.rearLeft.groundContactPoint,c.rearRight.groundContactPoint}.Where(o=>o).ToArray();
-        }
+        if(GUILayout.Button("왼쪽 접지점 위치 확인")&&c.rearLeft.groundContactPoint)EditorGUIUtility.PingObject(c.rearLeft.groundContactPoint);
+        if(GUILayout.Button("오른쪽 접지점 위치 확인")&&c.rearRight.groundContactPoint)EditorGUIUtility.PingObject(c.rearRight.groundContactPoint);
         using(new EditorGUI.DisabledScope(!Application.isPlaying)){
             if(GUILayout.Button("트레일러 연출 시작 / 시간표 재시작"))c.StartPreview();
             if(GUILayout.Button("발산 중지 / 남은 연기 자연 소멸"))c.StopPreview();

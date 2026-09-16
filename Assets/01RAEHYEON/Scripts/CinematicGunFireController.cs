@@ -6,6 +6,7 @@ public class CinematicGunFireController : MonoBehaviour
     [SerializeField] private Transform muzzle;
     [SerializeField] private GunProjectile projectilePrefab;
     [SerializeField] private GunSlideRecoil recoil;
+    [SerializeField] private GameObject muzzleFlashPrefab;
 
     [Header("Projectile")]
     [Min(1f)]
@@ -84,32 +85,36 @@ public class CinematicGunFireController : MonoBehaviour
             return;
         }
 
-        if (projectilePrefab == null)
+        if (muzzleFlashPrefab != null)
         {
-            Debug.LogWarning(
-                "[CinematicGunFireController] Projectile Prefab이 없습니다."
+            Instantiate(
+                muzzleFlashPrefab,
+                muzzle.position,
+                muzzle.rotation
             );
-            return;
         }
 
-        GunProjectile shot = Instantiate(
-            projectilePrefab,
-            muzzle.position,
-            muzzle.rotation
-        );
+        if (projectilePrefab != null)
+        {
+            GunProjectile shot = Instantiate(
+                projectilePrefab,
+                muzzle.position,
+                muzzle.rotation
+            );
 
-        float scale = Mathf.Max(
-            0.0001f,
-            Mathf.Abs(transform.lossyScale.x)
-        );
+            float scale = Mathf.Max(
+                0.0001f,
+                Mathf.Abs(transform.lossyScale.x)
+            );
 
-        shot.transform.localScale *= scale;
-        shot.radius *= scale;
+            shot.transform.localScale *= scale;
+            shot.radius *= scale;
 
-        shot.Launch(
-            transform,
-            projectileSpeed
-        );
+            shot.Launch(
+                transform,
+                projectileSpeed
+            );
+        }
 
         if (recoil != null)
             recoil.PlayRecoil();

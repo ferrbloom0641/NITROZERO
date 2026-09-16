@@ -41,7 +41,8 @@ namespace RacingUI
                 }
                 if(!found)return;
             }
-            var mesh=ctx.Allocate(p.Count,triangles.Count,texture);Rect uv=mesh.uvRegion;
+            // Unity 6 remaps normalized UVs to the texture's atlas region automatically.
+            var mesh=ctx.Allocate(p.Count,triangles.Count,texture);Rect uv=new Rect(0,0,1,1);
             foreach(Vector2 point in p)
                 mesh.SetNextVertex(new Vertex{position=new Vector3((point.x*1920/1672-region.x)/region.width*contentRect.width,(point.y*1080/941-region.y)/region.height*contentRect.height,Vertex.nearZ),tint=Color.white,uv=new Vector2(uv.x+point.x/1672*uv.width,uv.y+(1-point.y/941)*uv.height)});
             foreach(ushort index in triangles)mesh.SetNextIndex(index);

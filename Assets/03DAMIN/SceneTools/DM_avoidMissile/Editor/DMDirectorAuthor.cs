@@ -16,7 +16,7 @@ public static class DMDirectorAuthor
  const string Path="Assets/03DAMIN/DM_avoidMissile.unity";
  static DMCinematicDirector film;static Camera cam;static RenderTexture rt;static double began;
  static List<string> report=new List<string>();static HashSet<int> captured=new HashSet<int>();
- static bool finished;static int testStage;static Vector3[] starts;
+ static bool finished;static int testStage=0;static Vector3[] starts;
  static double nextLiveCheck;static string lastWait;
  [InitializeOnLoadMethod] static void Queue(){if(Application.dataPath.Replace('\\','/').Equals("C:/UnityProject/NITROQZERO_GIT/NITROZERO/Assets",StringComparison.OrdinalIgnoreCase))EditorApplication.update+=PollLive;}
  static void PollLive(){
