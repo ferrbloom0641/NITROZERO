@@ -65,6 +65,13 @@ namespace Damin.VFX.AirDistortion.Reusable
             }
             else
             {
+                // Preview motion must never compete with Timeline/gameplay motion.
+                // A scene target with an Animator or another enabled behaviour is considered owned.
+                if (source.GetComponentInParent<Animator>() != null || HasExternalMotionOwner(source))
+                {
+                    Status="Timeline/이동 스크립트가 제어하는 총알입니다. 테스트 이동을 끄고 왜곡만 사용하세요.";
+                    return false;
+                }
                 var body=source.GetComponentInChildren<Rigidbody>();
                 if(body&&!body.isKinematic){Status="물리 이동 중인 총알입니다. 테스트용 모형을 사용하거나 테스트 이동을 끄세요.";return false;}
                 moving=source;
@@ -77,6 +84,15 @@ namespace Damin.VFX.AirDistortion.Reusable
             }
             travelled=wait=0;finished=false;initialized=true;AirVFX.ClearTrail();Status=asset?"총알 원본은 유지 · 실행 중 테스트 복사본 이동":"씬 총알 테스트 이동 중 · 게임 이동 코드와 동시 사용 금지";
             return true;
+        }
+        static bool HasExternalMotionOwner(Transform target)
+        {
+            foreach(var behaviour in target.GetComponents<MonoBehaviour>())
+            {
+                if(behaviour&&behaviour.enabled&&!(behaviour is ReusableBulletAirDistortion)&&!(behaviour is AirPreviewFlight)&&!(behaviour is AirPreviewCameraFollow))
+                    return true;
+            }
+            return false;
         }
         static Vector3 LongestAxis(Transform target)
         {
