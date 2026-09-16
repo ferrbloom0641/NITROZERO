@@ -1,10 +1,10 @@
 <ui:UXML xmlns:racing="RacingUI" xmlns:ui="UnityEngine.UIElements" editor-extension-mode="False">
     <Style src="project://database/Assets/UI%20Toolkit/RacingHUD/AmberHUD.uss?fileID=7433441132597879392&amp;guid=2e6a06b16c4d4399807a208828fe1d49&amp;type=3#AmberHUD"/>
     <racing:HudDesignCanvas name="racing-hud" class="production-hud amber-hud tps-document" style="position: absolute; width: 100%; height: 100%; top: 0; left: 0;">
-        <ui:VisualElement name="ranking-panel" style="position: absolute; left: 58px; top: 42px; width: 300px; height: 150px;">
-            <racing:AmberMapFrame glass-opacity=".50" glass-color="#000000" name="ranking-panel-frame" footer="false" style="position: absolute; left: 0; top: 0; width: 300px; height: 150px;"/>
+        <ui:VisualElement name="ranking-panel" style="position: absolute; left: 58px; top: 42px; width: 300px; height: 245px;">
+            <racing:AmberMapFrame glass-opacity=".50" glass-color="#000000" name="ranking-panel-frame" footer="false" style="position: absolute; left: 0; top: 0; width: 300px; height: 245px;"/>
             <ui:Label name="rank-head" text="POSITION" class="" style="position: absolute; left: 20px; top: 10px; width: 145px; height: 20px; font-size: 14px;"/>
-            <ui:Label name="progress-head" text="PROGRESS" class="" style="position: absolute; left: 188px; top: 10px; width: 100px; height: 20px; font-size: 14px;"/>
+            <ui:Label name="progress-head" text="PROGRESS" class="" style="position: absolute; left: 188px; top: 10px; width: 100px; height: 20px; font-size: 14px; -unity-text-align: middle-center;"/>
             <ui:VisualElement name="ranking-row-1" class="ranking-row ranking-player" style="position: absolute; left: 20px; top: 38px; width: 260px; height: 32px;">
                 <ui:Label name="pos-0" text="01" class="rank-pos" style="position: absolute; left: 0; top: 0; width: 30px; height: 30px; font-size: 22px;"/>
                 <ui:Label name="driver-0" text="" class="rank-driver" style="position: absolute; left: 42px; top: 0; width: 135px; height: 30px; font-size: 17px;"/>
@@ -20,10 +20,25 @@
                 <ui:Label name="driver-2" text="" class="rank-driver" style="position: absolute; left: 42px; top: 0; width: 135px; height: 30px; font-size: 17px;"/>
                 <ui:Label name="progress-2" text="" class="rank-time" style="position: absolute; left: 181px; top: 0; width: 79px; height: 30px; font-size: 22px; -unity-text-align: middle-right;"/>
             </ui:VisualElement>
+            <ui:VisualElement name="ranking-row-4" class="ranking-row " style="position: absolute; left: 20px; top: 140px; width: 260px; height: 32px;">
+                <ui:Label name="pos-3" text="04" class="rank-pos" style="position: absolute; left: 0; top: 0; width: 30px; height: 30px; font-size: 22px;"/>
+                <ui:Label name="driver-3" text="" class="rank-driver" style="position: absolute; left: 42px; top: 0; width: 135px; height: 30px; font-size: 17px;"/>
+                <ui:Label name="progress-3" text="" class="rank-time" style="position: absolute; left: 181px; top: 0; width: 79px; height: 30px; font-size: 22px; -unity-text-align: middle-right;"/>
+            </ui:VisualElement>
+            <ui:VisualElement name="ranking-row-5" class="ranking-row " style="position: absolute; left: 20px; top: 174px; width: 260px; height: 32px;">
+                <ui:Label name="pos-4" text="05" class="rank-pos" style="position: absolute; left: 0; top: 0; width: 30px; height: 30px; font-size: 22px;"/>
+                <ui:Label name="driver-4" text="" class="rank-driver" style="position: absolute; left: 42px; top: 0; width: 135px; height: 30px; font-size: 17px;"/>
+                <ui:Label name="progress-4" text="" class="rank-time" style="position: absolute; left: 181px; top: 0; width: 79px; height: 30px; font-size: 22px; -unity-text-align: middle-right;"/>
+            </ui:VisualElement>
+            <ui:VisualElement name="ranking-row-6" class="ranking-row " style="position: absolute; left: 20px; top: 208px; width: 260px; height: 32px;">
+                <ui:Label name="pos-5" text="06" class="rank-pos" style="position: absolute; left: 0; top: 0; width: 30px; height: 30px; font-size: 22px;"/>
+                <ui:Label name="driver-5" text="" class="rank-driver" style="position: absolute; left: 42px; top: 0; width: 135px; height: 30px; font-size: 17px;"/>
+                <ui:Label name="progress-5" text="" class="rank-time" style="position: absolute; left: 181px; top: 0; width: 79px; height: 30px; font-size: 22px; -unity-text-align: middle-right;"/>
+            </ui:VisualElement>
         </ui:VisualElement>
         <ui:VisualElement name="minimap-panel" class="map-artwork" style="position: absolute; left: 1322px; top: 42px; width: 282px; height: 205px;">
             <racing:AmberMapFrame glass-opacity=".50" glass-color="#000000" style="position: absolute; left: 0; top: 0; width: 282px; height: 205px;"/>
-            <racing:NavigationMap name="navigation-road" amber-route="true" reference-marker="true" style="position: absolute; left: 10px; top: 10px; width: 262px; height: 158px;"/>
+            <racing:NavigationMap name="navigation-road" amber-route="true" reference-marker="true" style="position: absolute; left: 11px; top: 10px; width: 262px; height: 158px;"/>
             <ui:Label name="route-distance" text="DISTANCE LEFT" class="" style="position: absolute; left: 12px; top: 173px; width: 258px; height: 23px; font-size: 14px; -unity-text-align: middle-center;"/>
         </ui:VisualElement>
         <ui:VisualElement name="timer-panel" style="position: absolute; left: 690px; top: 30px; width: 290px; height: 66px;">

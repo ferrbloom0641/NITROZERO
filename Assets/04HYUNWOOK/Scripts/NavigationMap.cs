@@ -8,7 +8,7 @@ namespace RacingUI
     public partial class NavigationMap : VisualElement
     {
         float roadWidthValue = .55f, horizonValue = .22f, hazeValue = 1f;
-        float lateral, heading;
+        float lateral, heading, raceProgress, progressOffset = .075f;
         [UxmlAttribute] public bool amberRoute { get; set; }
         [UxmlAttribute] public bool referenceMarker { get; set; }
         Color mapTintValue = Color.clear;
@@ -32,6 +32,12 @@ namespace RacingUI
         {
             lateral = Mathf.Clamp(lane, -.65f, .65f);
             heading = Mathf.Clamp(angle, -45f, 45f);
+            MarkDirtyRepaint();
+        }
+        public void SetProgress(float progress, float forwardOffset)
+        {
+            raceProgress = Mathf.Clamp01(progress);
+            progressOffset = Mathf.Clamp(forwardOffset, .05f, .10f);
             MarkDirtyRepaint();
         }
         Vector2 Project(float side, float depth)
@@ -94,7 +100,15 @@ namespace RacingUI
                     p.BeginPath();p.MoveTo(new Vector2(cx,r.height*.82f));
                     p.LineTo(new Vector2(cx,r.height*.08f));p.Stroke();
                 }
-                var markerAt=new Vector2(r.width*.5f,r.height*.8f);float sz=referenceMarker?15:11;
+                float markerTravel = raceProgress * progressOffset * r.height;
+                var markerBase = new Vector2(r.width*.5f,r.height*.8f);
+                var markerAt = markerBase - new Vector2(0f, markerTravel);
+                if (markerTravel > .5f) {
+                    p.lineWidth = 3f;
+                    p.strokeColor = new Color(1f,.55f,.13f,.75f);
+                    p.BeginPath(); p.MoveTo(markerBase); p.LineTo(markerAt); p.Stroke();
+                }
+                float sz=referenceMarker?15:11;
                 var rot=Quaternion.Euler(0,0,-heading);
                 Vector2 Offset(float x,float y)=>markerAt+(Vector2)(rot*new Vector3(x,y,0));
                 Quad(p,new Color(1,.5f,.1f,1),Offset(-sz,sz*.7f),Offset(0,-sz),Offset(sz,sz*.7f),Offset(0,sz*.25f));

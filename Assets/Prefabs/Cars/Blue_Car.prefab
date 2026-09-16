@@ -10022,8 +10022,8 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1634630411140799084}
   serializedVersion: 2
-  m_LocalRotation: {x: -0.81131893, y: 0, z: 0, w: 0.5846038}
-  m_LocalPosition: {x: 0.0037322044, y: 0.243, z: -0.883}
+  m_LocalRotation: {x: -0.8110638, y: 0, z: 0, w: 0.58495766}
+  m_LocalPosition: {x: 0.003, y: 0.243, z: -0.883}
   m_LocalScale: {x: 0.64645, y: 0.6464499, z: 0.6464499}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -10139,7 +10139,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1706090949167581682}
   serializedVersion: 2
-  m_LocalRotation: {x: -0.5147691, y: 0.4847812, z: 0.5147691, w: 0.4847812}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0.41788054, y: 0.16597676, z: -1.1267076}
   m_LocalScale: {x: 0.2487, y: 0.24870004, z: 0.24870004}
   m_ConstrainProportionsScale: 0
@@ -12372,8 +12372,8 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1958946437574727349}
   serializedVersion: 2
-  m_LocalRotation: {x: -0.4984708, y: 0.4984708, z: 0.50152457, w: 0.50152457}
-  m_LocalPosition: {x: 0.01673198, y: -0.306, z: -1.088}
+  m_LocalRotation: {x: -0.49847054, y: 0.49847054, z: 0.50152487, w: 0.50152487}
+  m_LocalPosition: {x: 0.016, y: -0.306, z: -1.088}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -15225,8 +15225,8 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2880395809431328859}
   serializedVersion: 2
-  m_LocalRotation: {x: -0, y: 0.7071068, z: 0.7071068, w: 0}
-  m_LocalPosition: {x: 0.0039999485, y: 0.1718607, z: -1.2447076}
+  m_LocalRotation: {x: 0.000000030908623, y: 0.7071068, z: 0.7071068, w: -0.000000030908623}
+  m_LocalPosition: {x: 0.003, y: 0.1718, z: -1.244}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -25809,8 +25809,8 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 4612628296427629321}
   serializedVersion: 2
-  m_LocalRotation: {x: -0.5190933, y: -0.48014817, z: -0.5190933, w: 0.4801481}
-  m_LocalPosition: {x: -0.44603777, y: 0.16605723, z: -1.1267076}
+  m_LocalRotation: {x: -0.5191188, y: -0.48012057, z: -0.5191188, w: 0.4801205}
+  m_LocalPosition: {x: -0.44, y: 0.168, z: -1.126}
   m_LocalScale: {x: 0.2487, y: 0.24870001, z: 0.24870002}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -38085,8 +38085,8 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 6359132366419425504}
   serializedVersion: 2
-  m_LocalRotation: {x: -0, y: 0.7102416, z: 0.703958, w: 0}
-  m_LocalPosition: {x: 0.023000002, y: -0.0131393075, z: -1.3247075}
+  m_LocalRotation: {x: 0.000000030770753, y: 0.71024686, z: 0.7039528, w: -0.00000003104588}
+  m_LocalPosition: {x: 0.023, y: -0.013, z: -1.324}
   m_LocalScale: {x: 0.726, y: 0.72600013, z: 0.72600013}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -42764,16 +42764,18 @@ MonoBehaviour:
   triggerKeyFullSequenceAlt: 48
   stage5DelayAfterStage4: 0.08
   showOnGUI: 0
+  previewFinalTransformation: 0
+  previewProgress: 0
   targetCarRoot: {fileID: 4000763602302962614}
   ventLeft: {fileID: 3634422113482205747}
   ventRight: {fileID: 8663743579360384552}
-  scanner3D: {fileID: 0}
-  couplerLeft: {fileID: 0}
-  couplerRight: {fileID: 0}
-  armoredCowl: {fileID: 0}
-  boosterNozzle: {fileID: 0}
-  boosterTurbine: {fileID: 0}
-  boosterNeon: {fileID: 0}
+  scanner3D: {fileID: 6065203175150834600}
+  couplerLeft: {fileID: 5158163005301655733}
+  couplerRight: {fileID: 343651312642658485}
+  armoredCowl: {fileID: 8592449300134042588}
+  boosterNozzle: {fileID: 820722680880471691}
+  boosterTurbine: {fileID: 5787111064258217197}
+  boosterNeon: {fileID: 8251238613585078825}
   turbineAxis: 0
   maxTurbineSpeed: 1800
   spoolUpDuration: 1.8
@@ -42826,15 +42828,23 @@ MonoBehaviour:
     m_PreInfinity: 2
     m_PostInfinity: 2
     m_RotationOrder: 4
-  splineRed: {fileID: 0}
-  splineBlue: {fileID: 0}
-  splineYellow: {fileID: 0}
-  splineOrange: {fileID: 0}
+  splineRed: {fileID: 3309061301524375226}
+  splineBlue: {fileID: 5117084339450253366}
+  splineYellow: {fileID: 1316311342392395826}
+  splineOrange: {fileID: 7497167565785581353}
   splineInterval: 0.28
   splineGlowDuration: 0.5
   splineFadeOutDuration: 0.4
-  mainCover: {fileID: 0}
-  wheelSpinController: {fileID: 0}
+  mainCover: {fileID: 1876797505372322146}
+  boosterEffectRoot: {fileID: 0}
+  boosterFxMain: {fileID: 0}
+  boosterFxSub:
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  startWithFullTransformation: 1
+  wheelSpinController: {fileID: 650780780774011417}
   syncWheelBoostWithBooster: 0
   stepDuration: 0.2
   coverRetractDuration: 0.45
@@ -43014,8 +43024,8 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 7445302865175447624}
   serializedVersion: 2
-  m_LocalRotation: {x: -0.7071068, y: -0, z: -0, w: 0.7071068}
-  m_LocalPosition: {x: 0.49099994, y: -0.049039304, z: -1.4687076}
+  m_LocalRotation: {x: 0.7071068, y: 0, z: 0, w: -0.7071068}
+  m_LocalPosition: {x: 0.441, y: -0.048, z: -1.481}
   m_LocalScale: {x: -0.3367273, y: 0.3367273, z: 0.3367273}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -45060,7 +45070,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!4 &4482711521602345355
 Transform:
   m_ObjectHideFlags: 0
@@ -52123,8 +52133,8 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 9200327609899697435}
   serializedVersion: 2
-  m_LocalRotation: {x: -0.7071068, y: -0, z: -0, w: 0.7071068}
-  m_LocalPosition: {x: -0.4419999, y: -0.049039304, z: -1.4818075}
+  m_LocalRotation: {x: -0.7071068, y: 0, z: 0, w: 0.7071068}
+  m_LocalPosition: {x: -0.441, y: -0.048, z: -1.481}
   m_LocalScale: {x: 0.33672732, y: 0.3367273, z: 0.3367273}
   m_ConstrainProportionsScale: 0
   m_Children:
