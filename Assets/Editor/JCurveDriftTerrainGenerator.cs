@@ -351,7 +351,7 @@ public static class JCurveDriftTerrainGenerator
     {
         List<Vector3> points = new List<Vector3>();
         for (int i = 0; i <= 14; i++)
-            points.Add(Vector3.Lerp(new Vector3(-2050f, RoadY, 600f), new Vector3(-200f, RoadY, 600f), i / 14f));
+            points.Add(Vector3.Lerp(new Vector3(-2500f, RoadY, 600f), new Vector3(-200f, RoadY, 600f), i / 14f));
         for (int i = 1; i <= 20; i++)
         {
             float angle = Mathf.Lerp(90f, -20f, i / 20f) * Mathf.Deg2Rad;
@@ -360,7 +360,7 @@ public static class JCurveDriftTerrainGenerator
         float endAngle = -20f * Mathf.Deg2Rad;
         Vector3 arcEnd = new Vector3(-200f + Mathf.Cos(endAngle) * 600f, RoadY, Mathf.Sin(endAngle) * 600f);
         Vector3 exitDirection = new Vector3(Mathf.Sin(endAngle), 0f, -Mathf.Cos(endAngle));
-        for (int i = 1; i <= 10; i++) points.Add(arcEnd + exitDirection * (1450f * i / 10f));
+        for (int i = 1; i <= 10; i++) points.Add(arcEnd + exitDirection * (1916f * i / 10f));
         return points;
     }
 

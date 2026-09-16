@@ -190,43 +190,8 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents:
-    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: d61d0f7145cf00f409da0d9dcba24d79, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 1832968300989466300}
+    m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: d61d0f7145cf00f409da0d9dcba24d79, type: 3}
---- !u!1 &3504538858999390025 stripped
-GameObject:
-  m_CorrespondingSourceObject: {fileID: 919132149155446097, guid: d61d0f7145cf00f409da0d9dcba24d79, type: 3}
-  m_PrefabInstance: {fileID: 4351592521247957528}
-  m_PrefabAsset: {fileID: 0}
---- !u!114 &1832968300989466300
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 3504538858999390025}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: b7a8c9d0e1f2a3b4c5d6e7f8a9b0c1d2, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::YUJEONG.CCTVHeadRotationController
-  riseKey: 111
-  downY: 0
-  upY: 0.045
-  riseSpeed: 0.06
-  smoothRise: 0
-  resetElevationOnResetKey: 0
-  pivotTransform: {fileID: 0}
-  targetHead: {fileID: 0}
-  usePivotUpAxis: 1
-  invertDirection: 0
-  controlMode: 0
-  rotationSpeed: 40
-  targetAngle: 60
-  stepAngle: 15
-  smoothDamping: 0
 --- !u!4 &4317068763284784627 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: d61d0f7145cf00f409da0d9dcba24d79, type: 3}

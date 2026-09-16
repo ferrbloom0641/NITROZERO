@@ -65,6 +65,13 @@ namespace Damin.VFX.TireSmoke.Progressive
         [Min(.1f)] public float groundWidth = 1f;
         [Min(.1f)] public float groundHeight = 1f;
         [Min(.1f)] public float trailLength = 1f;
+        [Header("Ground follow / 노면 밀착 (선택)")]
+        [Tooltip("각 접지 앵커에서 아래로 Raycast하여 실제 노면에 연기를 붙입니다.")]
+        public bool followGround;
+        public LayerMask groundLayers = ~0;
+        [Min(.01f)] public float groundRayStart = .2f;
+        [Min(.01f)] public float groundRayDistance = .6f;
+        [Min(0)] public float groundOffset = .01f;
         [Header("Preview / Play 모드에서 미리보기")]
         public bool previewOnPlay = true;
         public bool loopPreview;
@@ -94,6 +101,12 @@ namespace Damin.VFX.TireSmoke.Progressive
         EffectState[] source = Array.Empty<EffectState>();
         Transform builtVehicle;
         float previewClock, localPower;
+        object timelineOwner;
+        float timelinePower;
+        float timelineLifetime = 1.2f, timelineExpansion = 1.4f;
+        float timelineGroundWidth = 1, timelineGroundHeight = 1, timelineTrailLength = 1;
+
+        public bool IsTimelineControlled => timelineOwner != null;
 
         static EffectState[] Capture(GameObject root)
         {
@@ -111,13 +124,25 @@ namespace Damin.VFX.TireSmoke.Progressive
             foreach(var e in source)Set(e.fx,"EmissionRate",0);
             RebuildBindings();if(previewOnPlay)StartPreview();
         }
-        void OnDisable(){ClearFollowers();RestoreSource();PreviewRunning=false;CurrentPower=0;}
+        void OnDisable(){ClearFollowers();RestoreSource();PreviewRunning=false;timelineOwner=null;timelinePower=0;CurrentPower=0;}
         void OnDestroy(){ClearFollowers();}
         void RestoreSource(){foreach(var e in source){if(e.renderer)e.renderer.enabled=e.rendererEnabled;if(e.fx)Set(e.fx,"EmissionRate",e.rate);}}
         void ClearFollowers(){foreach(var f in followers)if(f.root){f.root.SetActive(false);Destroy(f.root);}followers.Clear();}
         public void SetSmokePower(float value){smokePower=Mathf.Clamp01(value);}
         public void SetWheelSlip(bool left,float value){(left?rearLeft:rearRight).slipAmount=Mathf.Clamp01(value);}
         public void SetVehicleSpeed(float value){vehicleSpeed=Mathf.Max(0,value);}
+        public void SetTimelineState(object owner,float power,float lifetime,float expansion,float width,float height,float length)
+        {
+            if(owner==null)return;timelineOwner=owner;PreviewRunning=false;
+            timelinePower=Mathf.Clamp01(power);timelineLifetime=Mathf.Clamp(lifetime,.25f,3);
+            timelineExpansion=Mathf.Clamp(expansion,.25f,3);timelineGroundWidth=Mathf.Max(.1f,width);
+            timelineGroundHeight=Mathf.Max(.1f,height);timelineTrailLength=Mathf.Max(.1f,length);
+        }
+        public void ReleaseTimeline(object owner)
+        {
+            if(timelineOwner!=owner)return;timelineOwner=null;timelinePower=0;smokePower=0;localPower=0;
+            foreach(var f in followers)f.power=0;
+        }
         [ContextMenu("Start Progressive Preview (Play Mode)")]
         public void StartPreview(){if(!Application.isPlaying)return;previewClock=0;PreviewRunning=true;smokePower=0;}
         [ContextMenu("Stop Emission / Fade Out")]
@@ -187,12 +212,13 @@ namespace Damin.VFX.TireSmoke.Progressive
                 else if(previewClock<c)smokePower=1-Mathf.SmoothStep(0,1,(previewClock-b)/(c-b));
                 else {smokePower=0;if(loopPreview&&previewClock>=c+previewRestTime)previewClock=0;else if(!loopPreview)PreviewRunning=false;}
             }
-            float target=Mathf.Clamp01(smokePower);bool bound=followers.Count>0;
-            localPower=sequenceWasRunning?(bound?0:target):Smooth(localPower,bound?0:target);CurrentPower=localPower;
+            float target=timelineOwner!=null?timelinePower:Mathf.Clamp01(smokePower);bool bound=followers.Count>0;
+            bool direct=sequenceWasRunning||timelineOwner!=null;
+            localPower=direct?(bound?0:target):Smooth(localPower,bound?0:target);CurrentPower=localPower;
             foreach(var e in source){if(e.renderer)e.renderer.enabled=!(bound&&hideSourceWhenBound)&&e.rendererEnabled;Apply(e,localPower,previewAngularSpeed,1);}
             foreach(var f in followers){
                 Pose(f);float requested=f.binding.grounded&&f.wheel.gameObject.activeInHierarchy?target*Mathf.Clamp01(useSlipAmount?f.binding.slipAmount:1)*Mathf.Max(0,f.binding.powerMultiplier):0;
-                f.power=sequenceWasRunning?Mathf.Clamp01(requested):Smooth(f.power,Mathf.Clamp01(requested));CurrentPower=Mathf.Max(CurrentPower,f.power);
+                f.power=direct?Mathf.Clamp01(requested):Smooth(f.power,Mathf.Clamp01(requested));CurrentPower=Mathf.Max(CurrentPower,f.power);
                 foreach(var e in f.effects)Apply(e,f.power,f.binding.wheelAngularSpeed,f.binding.rotationDirection<0?-1:1);
             }
         }
@@ -209,11 +235,12 @@ namespace Damin.VFX.TireSmoke.Progressive
             if(!e.fx)return;int index=-1;if(layers!=null)for(int i=0;i<layers.Length;i++)if(layers[i]!=null&&!string.IsNullOrEmpty(layers[i].layerPrefix)&&e.fx.name.StartsWith(layers[i].layerPrefix,StringComparison.Ordinal)){index=i;break;}
             Set(e.fx,"EmissionRate",e.rate*EvaluateLayerStrength(index,power));
             // Do not fade existing particles by multiplying their opacity with power.
-            Set(e.fx,"LifetimeMultiplier",Mathf.Clamp(smokeLifetime,.25f,3));Set(e.fx,"Expansion",Mathf.Clamp(smokeExpansion,.25f,3));
+            float life=timelineOwner!=null?timelineLifetime:smokeLifetime, expansion=timelineOwner!=null?timelineExpansion:smokeExpansion;
+            Set(e.fx,"LifetimeMultiplier",Mathf.Clamp(life,.25f,3));Set(e.fx,"Expansion",Mathf.Clamp(expansion,.25f,3));
             Set(e.fx,"WrapAmount",Mathf.Clamp01(wrapAmount));Set(e.fx,"WrapAngularSpeed",Mathf.Max(.1f,angularSpeed));Set(e.fx,"RotationDirection",direction);
             float wake=speedToWake==null?1:Mathf.Clamp(speedToWake.Evaluate(Mathf.Max(0,vehicleSpeed)),.05f,6);
             Set(e.fx,"WakeSpeed",e.wake*wake);
-            if(e.fx.name.StartsWith("05_")){Set(e.fx,"FlowSpeed",1.7f*wake);Set(e.fx,"CloudWidth",Mathf.Max(.1f,groundWidth));Set(e.fx,"CloudHeight",Mathf.Max(.1f,groundHeight));Set(e.fx,"CloudLength",Mathf.Max(.1f,trailLength));}
+            if(e.fx.name.StartsWith("05_")){float w=timelineOwner!=null?timelineGroundWidth:groundWidth,h=timelineOwner!=null?timelineGroundHeight:groundHeight,l=timelineOwner!=null?timelineTrailLength:trailLength;Set(e.fx,"FlowSpeed",1.7f*wake);Set(e.fx,"CloudWidth",Mathf.Max(.1f,w));Set(e.fx,"CloudHeight",Mathf.Max(.1f,h));Set(e.fx,"CloudLength",Mathf.Max(.1f,l));}
         }
         void Pose(Follower f)
         {
@@ -223,7 +250,9 @@ namespace Damin.VFX.TireSmoke.Progressive
             var facing=Vector3.Cross(axle.normalized,up);if(Vector3.Dot(facing,forward)<0)facing=-facing;
             var rotation=Quaternion.LookRotation(facing,up);float radius=Mathf.Max(.01f,b.wheelRadius);float ratio=radius/Mathf.Max(.01f,referenceWheelRadius);
             Vector3 center=b.centerPoint?b.centerPoint.position:f.tire?f.tire.bounds.center:b.wheel.position;
-            f.root.transform.SetPositionAndRotation(b.groundContactPoint?b.groundContactPoint.position:center-up*radius,rotation);
+            Vector3 contact=b.groundContactPoint?b.groundContactPoint.position:center-up*radius;
+            if(followGround&&Physics.Raycast(contact+up*Mathf.Max(.01f,groundRayStart),-up,out var hit,Mathf.Max(.01f,groundRayStart+groundRayDistance),groundLayers,QueryTriggerInteraction.Ignore))contact=hit.point+hit.normal*groundOffset;
+            f.root.transform.SetPositionAndRotation(contact,rotation);
             f.root.transform.localScale=Vector3.one*ratio;
             foreach(var e in f.effects){if(!e.fx)continue;bool free=e.fx.name.StartsWith("03_")||e.fx.name.StartsWith("05_");e.fx.transform.localScale=e.scale*(free?1/ratio:1);
                 Set(e.fx,"WheelRadius",free?radius:Mathf.Max(.01f,referenceWheelRadius));Set(e.fx,"WheelWidth",Mathf.Max(.01f,b.wheelWidth)/(free?1:ratio));}
