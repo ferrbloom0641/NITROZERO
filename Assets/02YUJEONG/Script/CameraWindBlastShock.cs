@@ -83,31 +83,102 @@ namespace YUJEONG
         [Range(2.0f, 20.0f)]
         public float sweepDuration = 8.0f;
 
-        [Header("[ 🏎️ 광고 CF 스타일 세로 훑기 (도로 ➔ 차 전면 ➔ 중앙 ➔ 후면 ➔ 도로 감속 패스) ]")]
-        [Tooltip("체크(ON): 카메라가 차보다 살짝 앞서 달리다가, 슬금슬금 부드럽게 감속하며 [도로 ➔ 차 앞쪽 ➔ 중앙 ➔ 후면 부스터 ➔ 도로 뒤로 빠짐] 순서로 자연스럽게 훑고 지나가는 CF 광고 샷 연출!\n체크 해제(OFF): 기존 카메라")]
+        [Header("[ 🎬 360° 수직 텀블링 틸트 & 밤하늘 엔딩 연출 (Pitch-Flip Camera Sequence) ]")]
+        [Tooltip("체크(ON): 사진 1~5번 구도대로 차가 달려오는 것을 정면에서 포착 ➔ 카메라 아래로 통과할 때 수직 틸트 다운 ➔ 거꾸로 뒤집힌 채 멀어지는 뒷모습 포착 ➔ 계속 돌아 밤하늘을 올려다보며 여운 엔딩 연출\n체크 해제(OFF): 기본 모드 / 기존 카메라 설정 유지")]
+        public bool enablePitchFlipPass = true;
+
+        [Header("[ 📐 텀블링 틸트 6단계 각도 설정 (X축 회전) ]")]
+        [Tooltip("1단계 (사진 1): 정면 원거리 접근 기본 각도 (기본 2.174도)")]
+        public float pitchAngleApproach = 2.174f;
+
+        [Tooltip("다가오는 차량 포착 상하 구도 오프셋 (0 = 정중앙 락온, 음수 = 화면 하단부, 기본 0도)")]
+        [Range(-5f, 5f)]
+        public float approachFramingOffset = 0.0f;
+
+        [Tooltip("2단계 (사진 2): 근거리 접근 하향 틸트 각도 (기본 16.484도)")]
+        public float pitchAngleNearPass = 16.484f;
+
+        [Tooltip("3단계 (사진 3): 카메라 바로 밑 통과 수직 각도 (기본 90.0도)")]
+        public float pitchAnglePassUnder = 90.0f;
+
+        [Tooltip("4단계 (사진 4): 거꾸로 뒤집혀 멀어지는 차량 후면 추종 각도 (기본 153.128도)")]
+        public float pitchAngleInvertedRear = 153.128f;
+
+        [Tooltip("5단계 (사진 5): 거꾸로 수평 지평선 각도 (기본 177.507도)")]
+        public float pitchAngleInvertedHorizon = 177.507f;
+
+        [Tooltip("6단계 (엔딩): 밤하늘 응시 최종 각도 (기본 265도)")]
+        public float pitchAngleSkyEnding = 265.0f;
+
+        [Header("[ 📍 카메라 위치 및 수평 고정 설정 ]")]
+        [Tooltip("체크 시 아래 고정 위치(사진 1~5번 좌표)로 카메라 위치 강제 고정")]
+        public bool lockPitchFlipPosition = true;
+
+        [Tooltip("텀블링 연출 카메라 고정 로컬/월드 위치 (사진 기준: -1314.5, 1.97743, -0.5998)")]
+        public Vector3 pitchFlipFixedPos = new Vector3(-1314.5f, 1.97743f, -0.5998f);
+
+        [Tooltip("고정 Yaw 각도 (Y축, 사진 기준: -90도)")]
+        public float pitchFlipFixedYaw = -90.0f;
+
+        [Tooltip("고정 Roll 각도 (Z축, 사진 기준: 0도)")]
+        public float pitchFlipFixedRoll = 0.0f;
+
+        [Header("[ ⏱️ 완급조절 및 지속 시간 설정 ]")]
+        [Tooltip("통과 후 거꾸로 뒤집힌 채 멀어지는 두 차량의 후면을 감상하며 여운을 남기는 시간 (초 단위, 기본 3.0초)")]
+        [Range(1.0f, 8.0f)]
+        public float invertedRearLingerDuration = 3.0f;
+
+        [Tooltip("차량 후면 감상 후 밤하늘까지 점점 느려지며 회전하는 전환 시간 (초 단위, 권장 5.0~6.0초, 기본 5.5초)")]
+        [Range(1.5f, 12.0f)]
+        public float skyTiltUpDuration = 5.5f;
+
+        [Tooltip("카메라 각도 추종 반응성 (8도 협각 렌즈에서 차를 놓치지 않고 민첩하게 화면 중심에 락온, 권장 20~35)")]
+        [Range(5f, 50f)]
+        public float pitchTrackingResponsiveness = 25f;
+
+        [Header("[ 🛠️ 텀블링 실시간 에디터 프리뷰 ]")]
+        [Tooltip("체크 시 게임을 실행하지 않아도 인스펙터 슬라이더로 0%~100% 텀블링 각도를 씬 뷰에서 실시간 확인")]
+        public bool previewPitchFlip = false;
+        [Range(0f, 1f)]
+        public float previewPitchFlipProgress = 0f;
+
+        [Header("[ 🎬 원형 회전 훑기 연출 (Orbit Sweep Cam) - 사진 1~5번 구도 ]")]
+        [Tooltip("체크(ON): 사진처럼 노란색 회전 링을 돌리듯 차 앞 대각선 ➔ 측면 ➔ 후면으로 매끄럽게 훑는 시네마틱 카메라 연출 활성화\n체크 해제(OFF): 기존 일반 카메라")]
         public bool enableVerticalAdSweepCam = true;
+        public bool enableOrbitSweepCam = true;
 
-        [Tooltip("1단계: 도로 및 차 앞부분 진입 로컬 위치 (차량 앞 도로를 비추며 시작)")]
-        public Vector3 verticalSweepStartPos = new Vector3(-0.01f, 6.75f, 3.50f);
+        [Tooltip("1단계 (사진 1): 전측면 대각 구도 로컬 위치")]
+        public Vector3 verticalSweepStartPos = new Vector3(28.0201f, 2.75505f, 104.834f);
+        public Vector3 verticalSweepStartRot = new Vector3(0.495f, 185.033f, -5.21f);
 
-        [Tooltip("2단계: 차 앞쪽 보닛 클로즈업 로컬 위치 (사진 1~2번 구도: -0.01, 6.45, -0.80)")]
-        public Vector3 verticalSweepMidPos1 = new Vector3(-0.01f, 6.45f, -0.80f);
+        [Tooltip("2단계 (사진 2): 전측면 3/4 구도 로컬 위치")]
+        public Vector3 verticalSweepMidPos1 = new Vector3(43.435f, 4.55768f, 89.8453f);
+        public Vector3 verticalSweepMidRot1 = new Vector3(2.028f, 212.368f, -4.83f);
 
-        [Tooltip("3단계: 차 중앙 엔진룸/벤트판 통과 로컬 위치 (사진 3번 구도: -0.01, 5.62, -3.19)")]
-        public Vector3 verticalSweepMidPos2 = new Vector3(-0.01f, 5.62f, -3.19f);
+        [Tooltip("3단계 (사진 3): 완벽한 측면 프로필 구도 로컬 위치")]
+        public Vector3 verticalSweepMidPos2 = new Vector3(60.1264f, 6.59522f, 55.9025f);
+        public Vector3 verticalSweepMidRot2 = new Vector3(4.100f, 241.117f, -3.29f);
 
-        [Tooltip("4단계: 차 후면 부스터 노즐 집중 로컬 위치 (사진 4번 구도: -0.01, 4.93, -4.79)")]
-        public Vector3 verticalSweepMidPos3 = new Vector3(-0.01f, 4.93f, -4.79f);
+        [Tooltip("4단계 (사진 4): 후측면 부스터/디퓨저 구도 로컬 위치")]
+        public Vector3 verticalSweepMidPos3 = new Vector3(51.3738f, 6.82395f, 1.78538f);
+        public Vector3 verticalSweepMidRot3 = new Vector3(5.223f, 283.428f, 0.31f);
 
-        [Tooltip("5단계: 차가 카메라를 앞질러가며 뒤편 도로가 보이는 종료 로컬 위치")]
-        public Vector3 verticalSweepEndPos = new Vector3(-0.01f, 4.50f, -8.50f);
+        [Tooltip("5단계 (사진 5): 차가 지나가며 뒤편을 비추는 후면 구도 로컬 위치")]
+        public Vector3 verticalSweepEndPos = new Vector3(19.4323f, 4.19730f, -28.158f);
+        public Vector3 verticalSweepEndRot = new Vector3(4.188f, 316.957f, 3.17f);
 
-        [Tooltip("카메라 고정 회전 각도 (인스펙터 수치: 66.881, 0, 0)")]
-        public Vector3 verticalSweepFixedEuler = new Vector3(66.881f, 0f, 0f);
+        [Tooltip("카메라 고정 회전 각도 (회전 보간 미사용 시 기본값)")]
+        public Vector3 verticalSweepFixedEuler = new Vector3(4.100f, 241.117f, -3.29f);
+
+        [Header("[ 🛠️ 에디터 미리보기 (프리뷰 슬라이더) ]")]
+        [Tooltip("체크 시 게임을 실행하지 않아도 인스펙터 슬라이더로 0%~100% 궤적을 씬 뷰에서 실시간 확인")]
+        public bool previewOrbitSweep = false;
+        [Range(0f, 1f)]
+        public float previewOrbitProgress = 0f;
 
         [Tooltip("스플라인 출발 후 훑기 카메라 연출이 시작되기까지의 대기 시간 (초)")]
         [Range(0f, 5.0f)]
-        public float sweepStartDelay = 0.5f;
+        public float sweepStartDelay = 0.0f;
 
         [Tooltip("빨간 차 부스터 훑기 조준 오프셋 (Image 1 & 2 구도 미세 조정)")]
         public Vector3 redCarAimOffset = new Vector3(0.5f, 0.4f, -0.5f);
@@ -317,6 +388,13 @@ namespace YUJEONG
         private bool hasApproachedFromFront = false;
         private bool hasCarTraveledEnough = false;
 
+        // 360 수직 텀블링 틸트 상태 변수
+        private bool isPitchFlipReceding = false;
+        private float pitchFlipRecedeTimer = 0f;
+        private float currentPitchFlipAngle = 2.174f;
+        private float currentCameraAheadDistance = 9999f;
+        private float skyTransitionStartPitch = -1f;
+
         // 부스터 변형 훑기 카메라 및 경쟁 주행 상태 변수
         private Transform redCarTransform;
         private Transform blueCarTransform;
@@ -450,7 +528,7 @@ namespace YUJEONG
             ResetRacingRivalryMotion();
             sweepTimer = 0f;
 
-            if (isKnockedDown || isCameraDetached)
+            if (isKnockedDown || isCameraDetached || isPitchFlipReceding)
             {
                 transform.localPosition = initialLocalPos;
                 transform.position = initialWorldPos;
@@ -460,6 +538,10 @@ namespace YUJEONG
             }
             isKnockedDown = false;
             isCameraDetached = false;
+            isPitchFlipReceding = false;
+            pitchFlipRecedeTimer = 0f;
+            currentCameraAheadDistance = 9999f;
+            skyTransitionStartPitch = -1f;
             knockdownProgress = 0f;
             currentPhase = CinematicPhase.Quiet;
             sequenceTimer = 0f;
@@ -796,6 +878,7 @@ namespace YUJEONG
                 // 차량의 진행 방향 기준으로 카메라가 앞쪽에 있는지(+값), 뒤쪽에 있는지(-값) 계산
                 // (차량이 카메라를 향해 올 때는 양수, 카메라 바로 옆을 지날 때 0, 카메라를 지나치면 음수)
                 float cameraAheadDistance = Vector3.Dot(carToCam, carForwardDir);
+                currentCameraAheadDistance = cameraAheadDistance;
 
                 // 차량이 처음 출발하여 카메라 앞쪽에서 달려오고 있었음을 확인
                 if (cameraAheadDistance > 1.0f)
@@ -809,7 +892,42 @@ namespace YUJEONG
                     minCarDistanceToCam = currentDistToCam;
                 }
 
-                if (enableKnockdown)
+                if (enablePitchFlipPass)
+                {
+                    if (!isPitchFlipReceding)
+                    {
+                        currentPhase = CinematicPhase.PassByRush;
+
+                        if (currentCameraAheadDistance <= 0.05f && hasCarTraveledEnough && hasApproachedFromFront)
+                        {
+                            isPitchFlipReceding = true;
+                            pitchFlipRecedeTimer = 0f;
+                            actualPassTime = sequenceTimer;
+                            Debug.Log($"[CameraWindBlastShock] 💥 차량 통과 감지! 거꾸로 뒤집힌 후면 추종 연출 시작! (시간: {sequenceTimer:F2}초)");
+                        }
+                    }
+                    else
+                    {
+                        float totalTumbleTime = invertedRearLingerDuration + skyTiltUpDuration;
+                        if (pitchFlipRecedeTimer < totalTumbleTime)
+                        {
+                            currentPhase = (pitchFlipRecedeTimer < invertedRearLingerDuration) ? CinematicPhase.PassByRush : CinematicPhase.KnockedDown;
+                        }
+                        else
+                        {
+                            skyGazeTimer += Time.deltaTime;
+                            if (skyGazeTimer < skyHoldDuration)
+                            {
+                                currentPhase = CinematicPhase.SkyGazing;
+                            }
+                            else
+                            {
+                                currentPhase = CinematicPhase.Completed;
+                            }
+                        }
+                    }
+                }
+                else if (enableKnockdown)
                 {
                     if (!isKnockedDown)
                     {
@@ -1570,30 +1688,122 @@ namespace YUJEONG
                     }
                 }
 
-                if (enableBoosterSweepCam && targetVehicle != null && !isCameraDetached)
+                if (enablePitchFlipPass)
                 {
-                    if (splineLaunched || isSequenceRunning)
+                    float calculatedPitch = pitchAngleApproach;
+                    float skyShakeFade = 0.15f;
+
+                    Vector3 currentCarPos = GetActualCarCenterPosition();
+                    Vector3 camPos = lockPitchFlipPosition ? pitchFlipFixedPos : ((transform.parent != null) ? transform.parent.TransformPoint(pitchFlipFixedPos) : pitchFlipFixedPos);
+
+                    if (currentCarPos != Vector3.zero && splineLaunched)
                     {
-                        sweepTimer += Time.deltaTime;
+                        // 카메라 고정 위치 기준 거리
+                        // 차량이 접근 중: carPos.x < camPos.x => d_ahead > 0
+                        // 차량이 통과 후: carPos.x > camPos.x => d_ahead < 0
+                        float d_ahead = camPos.x - currentCarPos.x;
+                        currentCameraAheadDistance = d_ahead;
+
+                        // 높이 차이 (카메라 높이 1.98m 대비 차체 중심 높이)
+                        float heightDiff = Mathf.Max(0.2f, camPos.y - (currentCarPos.y + 0.35f));
+
+                        if (d_ahead > 0.05f && !isPitchFlipReceding)
+                        {
+                            // =========================================================================
+                            // [1단계] 다가오는 차량 접근 실시간 락온 추종 (0도 ~ 90도)
+                            // =========================================================================
+                            // 8도 망원 렌즈에서도 차량이 화면 밖으로 이탈하지 않도록 삼각함수로 각도 직결
+                            float physicalLookPitch = Mathf.Atan2(heightDiff, Mathf.Max(0.01f, d_ahead)) * Mathf.Rad2Deg;
+
+                            // 화면 중심에 안정적으로 락온
+                            float targetPitch = Mathf.Max(pitchAngleApproach, physicalLookPitch + approachFramingOffset);
+
+                            // 차량의 속도에 맞춰 밀착 추종 (원거리에선 차분하게, 카메라 바로 밑 0m 근접 시 90도로 휙 가속)
+                            currentPitchFlipAngle = Mathf.Lerp(currentPitchFlipAngle, targetPitch, Time.deltaTime * pitchTrackingResponsiveness);
+                            calculatedPitch = currentPitchFlipAngle;
+                        }
+                        else
+                        {
+                            // 통과 순간 즉시 2단계 진입
+                            if (!isPitchFlipReceding)
+                            {
+                                isPitchFlipReceding = true;
+                                pitchFlipRecedeTimer = 0f;
+                                actualPassTime = sequenceTimer;
+                            }
+
+                            // =========================================================================
+                            // [2단계 & 3단계] 통과 후 거꾸로 후면 감상 ➔ 밤하늘 감속 안착 (90도 ~ 265도)
+                            // =========================================================================
+                            pitchFlipRecedeTimer += Time.deltaTime;
+
+                            float d_receding = Mathf.Max(0.01f, currentCarPos.x - camPos.x);
+
+                            if (pitchFlipRecedeTimer < invertedRearLingerDuration)
+                            {
+                                // [2단계: 후면 감상] 거꾸로 뒤집힌 채(150~178도) 멀어지는 차량 후면 배기구를 화면에 담으며 여운 남기기
+                                // 기하학적 후면 조준 각도: 180도 - Atan2(heightDiff, d_receding)
+                                float invertedTargetPitch = 180.0f - (Mathf.Atan2(heightDiff, d_receding) * Mathf.Rad2Deg);
+                                currentPitchFlipAngle = Mathf.Lerp(currentPitchFlipAngle, invertedTargetPitch, Time.deltaTime * pitchTrackingResponsiveness);
+                                calculatedPitch = currentPitchFlipAngle;
+                                skyTransitionStartPitch = currentPitchFlipAngle;
+                            }
+                            else
+                            {
+                                // [3단계: 밤하늘 안착] 후면 감상 완료 후, 부드럽게 시작하여(초기 속도 0) 점점 밤하늘(265도)로 올라가며 마지막에 완전히 멈추기 (SmootherStep)
+                                if (skyTransitionStartPitch < 0f)
+                                {
+                                    skyTransitionStartPitch = currentPitchFlipAngle;
+                                }
+
+                                float skyT = Mathf.Clamp01((pitchFlipRecedeTimer - invertedRearLingerDuration) / Mathf.Max(0.1f, skyTiltUpDuration));
+
+                                // Ken Perlin's SmootherStep (6t^5 - 15t^4 + 10t^3)
+                                // t=0에서 미분계수(속도)가 0이므로 휙 채가듯 급발진하지 않고, 극도로 부드럽고 차분하게 고개를 들기 시작함.
+                                // t=1에서도 미분계수(속도)가 0이므로 265도 밤하늘에서 우아하고 완벽하게 감속 정지(Ease-Out)함.
+                                float smoothSkyT = skyT * skyT * skyT * (skyT * (skyT * 6f - 15f) + 10f);
+
+                                calculatedPitch = Mathf.Lerp(skyTransitionStartPitch, pitchAngleSkyEnding, smoothSkyT);
+                                currentPitchFlipAngle = calculatedPitch;
+
+                                skyShakeFade = Mathf.Lerp(0.15f, 0f, skyT);
+                            }
+                        }
                     }
+                    else
+                    {
+                        calculatedPitch = pitchAngleApproach;
+                        currentPitchFlipAngle = calculatedPitch;
+                    }
+
+                    // 카메라 위치 고정
+                    if (lockPitchFlipPosition)
+                    {
+                        if (transform.parent != null)
+                        {
+                            transform.localPosition = pitchFlipFixedPos;
+                        }
+                        else
+                        {
+                            transform.position = pitchFlipFixedPos;
+                        }
+                    }
+
+                    // 회전: 오직 빨간색 회전 링(Pitch X축)만 주욱 회전!
+                    Quaternion basePitchRot = Quaternion.Euler(calculatedPitch, pitchFlipFixedYaw, pitchFlipFixedRoll);
+                    transform.localRotation = basePitchRot * Quaternion.Euler(shakeRotEuler * skyShakeFade);
+                }
+                else if ((enableBoosterSweepCam || enableOrbitSweepCam) && targetVehicle != null && !isCameraDetached)
+                {
+                    sweepTimer += Time.deltaTime;
 
                     float sweepT = Mathf.Clamp01((sweepTimer - sweepStartDelay) / Mathf.Max(0.1f, sweepDuration));
                     float smoothSweepT = Mathf.SmoothStep(0f, 1f, sweepT);
 
-                    if (enableVerticalAdSweepCam)
+                    if (enableVerticalAdSweepCam || enableOrbitSweepCam)
                     {
-                        // 🏎️ 스팟에서 멈칫거리지 않고 처음부터 끝까지 물 흐르듯 한 번에 부드럽게 주욱 훑는 캣멀-롬(Catmull-Rom) 연속 스플라인 곡선
-                        Vector3 currentLocalPos = EvaluateCatmullRomSpline(
-                            verticalSweepStartPos,
-                            verticalSweepMidPos1,
-                            verticalSweepMidPos2,
-                            verticalSweepMidPos3,
-                            verticalSweepEndPos,
-                            smoothSweepT
-                        );
-
-                        transform.localPosition = currentLocalPos;
-                        transform.localRotation = Quaternion.Euler(verticalSweepFixedEuler);
+                        // 🏎️ 사진 1~5번 5단계 궤적을 3차 곡선 및 쿼터니언 Slerp로 회전 링 돌리듯 물 흐르듯 훑기
+                        ApplyOrbitSweepPose(sweepT);
                     }
                     else if (sweepCamOffsetInitialized)
                     {
@@ -1770,6 +1980,215 @@ namespace YUJEONG
                 (2f * cp0 - 5f * cp1 + 4f * cp2 - cp3) * (u * u) +
                 (-cp0 + 3f * cp1 - 3f * cp2 + cp3) * (u * u * u)
             );
+        }
+
+        /// <summary>
+        /// 0~1 진행도에 맞춰 CM_Shot01의 로컬 위치와 회전을 사진 1~5번 궤적으로 멈칫거림 없이 부드럽게 주욱 훑기
+        /// (중간 5개 지점에서 감속하거나 멈칫거리지 않고 처음부터 끝까지 완전한 단일 연속 곡선으로 부드럽게 통과)
+        /// </summary>
+        public void ApplyOrbitSweepPose(float t)
+        {
+            // 전체 훑기의 시작(0)과 끝(1)에서만 부드러운 가감속 적용 (중간 경유점에서는 속도 0 감속 완전 차단)
+            float smoothT = Mathf.SmoothStep(0f, 1f, Mathf.Clamp01(t));
+
+            // 1. 위치: 5개 제어점을 멈칫거림 없이 통과하는 3차 캣멀-롬 연속 곡선
+            Vector3 currentLocalPos = EvaluateCatmullRomSpline(
+                verticalSweepStartPos,
+                verticalSweepMidPos1,
+                verticalSweepMidPos2,
+                verticalSweepMidPos3,
+                verticalSweepEndPos,
+                smoothT
+            );
+
+            // 2. 회전: 오일러 각도 역시 3차 캣멀-롬 연속 곡선으로 보간하여 노란색 회전 링을 일정하게 돌리듯 매끄럽게 훑음
+            Vector3 currentEuler = EvaluateCatmullRomSpline(
+                verticalSweepStartRot,
+                verticalSweepMidRot1,
+                verticalSweepMidRot2,
+                verticalSweepMidRot3,
+                verticalSweepEndRot,
+                smoothT
+            );
+
+            transform.localPosition = currentLocalPos;
+            transform.localRotation = Quaternion.Euler(currentEuler);
+        }
+
+        public void ApplyOrbitSweepDefaultWaypoints()
+        {
+            verticalSweepStartPos = new Vector3(28.0201f, 2.75505f, 104.834f);
+            verticalSweepStartRot = new Vector3(0.495f, 185.033f, -5.21f);
+
+            verticalSweepMidPos1 = new Vector3(43.435f, 4.55768f, 89.8453f);
+            verticalSweepMidRot1 = new Vector3(2.028f, 212.368f, -4.83f);
+
+            verticalSweepMidPos2 = new Vector3(60.1264f, 6.59522f, 55.9025f);
+            verticalSweepMidRot2 = new Vector3(4.100f, 241.117f, -3.29f);
+
+            verticalSweepMidPos3 = new Vector3(51.3738f, 6.82395f, 1.78538f);
+            verticalSweepMidRot3 = new Vector3(5.223f, 283.428f, 0.31f);
+
+            verticalSweepEndPos = new Vector3(19.4323f, 4.19730f, -28.158f);
+            verticalSweepEndRot = new Vector3(4.188f, 316.957f, 3.17f);
+
+            enableVerticalAdSweepCam = true;
+            enableOrbitSweepCam = true;
+            enableBoosterSweepCam = true;
+        }
+
+        /// <summary>
+        /// 차량 통과 직후 멈칫거림 없이 거꾸로 뒤집힌 채(153도 -> 177도) 멀어지는 후면을 감상하고,
+        /// 밤하늘(265도)에 도달하면서 점진적으로 감속(Ease-out)하여 웅장하게 멈추는 PCHIP 연속 곡선
+        /// </summary>
+        public float EvaluatePostPassPitch(float t)
+        {
+            t = Mathf.Clamp01(t);
+
+            float[] x = new float[] { 0.00f, 0.28f, 0.55f, 1.00f };
+            float[] y = new float[] {
+                Mathf.Max(75f, pitchAnglePassUnder),
+                pitchAngleInvertedRear,
+                pitchAngleInvertedHorizon,
+                pitchAngleSkyEnding
+            };
+
+            return EvaluatePchipSpline(x, y, t, true);
+        }
+
+        /// <summary>
+        /// 6개 제어 각도를 중간 멈칫거림 없이 100% 매끄럽게 통과하고 밤하늘에서 부드럽게 감속하는 단일 연속 PCHIP 곡선
+        /// (0.00: 2.17° -> 0.18: 16.48° -> 0.38: 72.69° -> 0.60: 153.13° -> 0.80: 177.51° -> 1.00: 265.0°)
+        /// </summary>
+        public float EvaluatePitchFlipAngle(float t)
+        {
+            t = Mathf.Clamp01(t);
+
+            float[] x = new float[] { 0.00f, 0.18f, 0.38f, 0.60f, 0.80f, 1.00f };
+            float[] y = new float[] {
+                pitchAngleApproach,
+                pitchAngleNearPass,
+                pitchAnglePassUnder,
+                pitchAngleInvertedRear,
+                pitchAngleInvertedHorizon,
+                pitchAngleSkyEnding
+            };
+
+            return EvaluatePchipSpline(x, y, t, true);
+        }
+
+        /// <summary>
+        /// 구간마다 멈칫거리지 않고, 중간 점들의 연속적인 속도를 보존하며 끝점에서만 자연스럽게 감속(Ease-out)하는 단일 3차 PCHIP 연속 스플라인
+        /// </summary>
+        private float EvaluatePchipSpline(float[] x, float[] y, float t, bool zeroEndTangent)
+        {
+            int n = x.Length;
+            if (n == 0) return 0f;
+            if (n == 1) return y[0];
+            if (t <= x[0]) return y[0];
+            if (t >= x[n - 1]) return y[n - 1];
+
+            int i = 0;
+            while (i < n - 2 && t > x[i + 1])
+            {
+                i++;
+            }
+
+            float h0 = x[i + 1] - x[i];
+            float delta0 = (y[i + 1] - y[i]) / h0;
+
+            float d_i;
+            if (i == 0)
+            {
+                d_i = delta0;
+            }
+            else
+            {
+                float hPrev = x[i] - x[i - 1];
+                float deltaPrev = (y[i] - y[i - 1]) / hPrev;
+                d_i = (deltaPrev * delta0 > 0f) ? (2f * deltaPrev * delta0) / (deltaPrev + delta0) : 0f;
+            }
+
+            float d_next;
+            if (i + 1 == n - 1)
+            {
+                d_next = zeroEndTangent ? 0f : delta0;
+            }
+            else
+            {
+                float hNext = x[i + 2] - x[i + 1];
+                float deltaNext = (y[i + 2] - y[i + 1]) / hNext;
+                d_next = (delta0 * deltaNext > 0f) ? (2f * delta0 * deltaNext) / (delta0 + deltaNext) : 0f;
+            }
+
+            float u = Mathf.Clamp01((t - x[i]) / h0);
+            float u2 = u * u;
+            float u3 = u2 * u;
+
+            float h00 = 2f * u3 - 3f * u2 + 1f;
+            float h10 = u3 - 2f * u2 + u;
+            float h01 = -2f * u3 + 3f * u2;
+            float h11 = u3 - u2;
+
+            return h00 * y[i] + h10 * h0 * d_i + h01 * y[i + 1] + h11 * h0 * d_next;
+        }
+
+        public void ApplyPitchFlipPose(float progress)
+        {
+            float pitch = EvaluatePitchFlipAngle(progress);
+            currentPitchFlipAngle = pitch;
+
+            if (lockPitchFlipPosition)
+            {
+                if (transform.parent != null)
+                {
+                    transform.localPosition = pitchFlipFixedPos;
+                }
+                else
+                {
+                    transform.position = pitchFlipFixedPos;
+                }
+            }
+
+            transform.localRotation = Quaternion.Euler(pitch, pitchFlipFixedYaw, pitchFlipFixedRoll);
+        }
+
+        [ContextMenu("🎬 360° 수직 텀블링 연출 켜기 및 사진 1~5번 기본값 적용")]
+        public void ApplyPitchFlipDefaultValues()
+        {
+            pitchAngleApproach = 2.174f;
+            approachFramingOffset = 0.0f;
+            pitchAngleNearPass = 16.484f;
+            pitchAnglePassUnder = 90.0f;
+            pitchAngleInvertedRear = 153.128f;
+            pitchAngleInvertedHorizon = 177.507f;
+            pitchAngleSkyEnding = 265.0f;
+
+            pitchFlipFixedPos = new Vector3(-1314.5f, 1.97743f, -0.5998f);
+            pitchFlipFixedYaw = -90.0f;
+            pitchFlipFixedRoll = 0.0f;
+
+            invertedRearLingerDuration = 3.0f;
+            skyTiltUpDuration = 5.5f;
+            pitchTrackingResponsiveness = 25f;
+
+            enablePitchFlipPass = true;
+            enableKnockdown = false;
+            enableOrbitSweepCam = false;
+            enableVerticalAdSweepCam = false;
+            enableBoosterSweepCam = false;
+        }
+
+        private void OnValidate()
+        {
+            if (previewPitchFlip && !Application.isPlaying)
+            {
+                ApplyPitchFlipPose(previewPitchFlipProgress);
+            }
+            else if (previewOrbitSweep && !Application.isPlaying)
+            {
+                ApplyOrbitSweepPose(previewOrbitProgress);
+            }
         }
 
         private bool IsRestartKeyPressed()
@@ -2066,6 +2485,9 @@ namespace YUJEONG
             isSequenceRunning = true;
             splineLaunched = false;
             isKnockedDown = false;
+            isPitchFlipReceding = false;
+            pitchFlipRecedeTimer = 0f;
+            currentCameraAheadDistance = 9999f;
         }
 
         /// <summary>
