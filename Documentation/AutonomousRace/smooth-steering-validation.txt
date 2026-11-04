@@ -1,0 +1,1 @@
+PASS: actual road mesh and measured six-vehicle envelope sizes, 6000 steps/120s. road=5372.09m, lane=12.99997m, minimum gap=9.999999m, rank changes=9; speed, separation, lane bounds, end stop, deterministic restart including steering, repeatable interpolated rendering. Maximum yaw rate=8.496094 deg/s; yaw acceleration=20.1416 deg/s2; lateral acceleration=8.614063m/s2.

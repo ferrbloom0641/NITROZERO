@@ -1,0 +1,1 @@
+PASS: exact installed camera rig and blue prefab bindings; real ParticleSystem lifetime survived 120 repeated transformation samples (0.50s / 100 particles); replay clears; reignition and disabled parent recovery; speed 67.5/127.5m/s; 57 position checks remain on road and draw level at 20s. GPU graph visual appearance not rendered by this test.

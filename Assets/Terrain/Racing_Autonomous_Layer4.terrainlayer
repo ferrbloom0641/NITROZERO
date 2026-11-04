@@ -1,0 +1,23 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1953259897 &8574412962073106934
+TerrainLayer:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: Racing_Autonomous_Layer4
+  m_DiffuseTexture: {fileID: 2800000, guid: d201a841b41308044aa22a3e9bc77531, type: 3}
+  m_NormalMapTexture: {fileID: 2800000, guid: 282b52817bf20cf449caf0ae89ba88b0, type: 3}
+  m_MaskMapTexture: {fileID: 0}
+  m_TileSize: {x: 151, y: 127}
+  m_TileOffset: {x: 138.9, y: 105.9}
+  m_Specular: {r: 0, g: 0, b: 0, a: 0}
+  m_Metallic: 0
+  m_Smoothness: 0
+  m_NormalScale: 0.3
+  m_DiffuseRemapMin: {x: 0, y: 0, z: 0, w: 1}
+  m_DiffuseRemapMax: {x: 0.49, y: 0.51, z: 0.55, w: 1}
+  m_MaskMapRemapMin: {x: 0, y: 0, z: 0, w: 0}
+  m_MaskMapRemapMax: {x: 1, y: 1, z: 1, w: 1}
+  m_SmoothnessSource: 1

@@ -1,0 +1,13 @@
+{
+  "backup": "Backups/BoostOutside/GroundFocus_2026-09-17T03-42-18-684Z",
+  "redHeight": 2.1689817905426025,
+  "blueHeight": 2.883272409439087,
+  "redY": -21.48101806640625,
+  "blueY": -20.766727447509766,
+  "minGap": -0.000705718994140625,
+  "maxGap": 0.028673171997070312,
+  "redDelta": -0.4777110094573973,
+  "blueDelta": -0.6343805905609132,
+  "profile": "NITROZERO/Assets/01RAEHYEON/Material/BoostOutsideVolumeProfile.asset",
+  "originalProfileUnchanged": true
+}

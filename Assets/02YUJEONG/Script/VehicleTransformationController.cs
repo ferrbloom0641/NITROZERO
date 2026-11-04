@@ -1982,6 +1982,11 @@ namespace YUJEONG
         {
             if (fxObj == null) return;
 
+            // Progress can be sampled every frame by a cinematic director. Do not
+            // clear/reinitialize an already running flame: its particles need to age
+            // to form the exhaust tail. A disabled parent still requires activation.
+            if (active ? fxObj.activeInHierarchy : !fxObj.activeSelf) return;
+
             if (active)
             {
                 // 최상위 Booster_effect 부모 오브젝트가 꺼져 있다면 반드시 먼저 켜줌

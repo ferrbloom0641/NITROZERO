@@ -1,0 +1,14 @@
+{
+  "source": "C:\\UnityProject\\NITROZEROtrailer\\NITROZERO\\Assets\\01RAEHYEON\\RHScenes\\RH_racing.unity",
+  "source_sha256": "a231b80e971124b964765c51ab76deabe499dcbb6a733ea4e746b74d3c7a61b5",
+  "destination": "C:\\UnityProject\\NITROZEROtrailer\\NITROZERO\\Assets\\01RAEHYEON\\RHScenes\\RH_racing_Autonomous.unity",
+  "car_transform_ids": [
+    5121965288498215515,
+    4260207051010216663,
+    1622455211343060272,
+    6217890374205796617,
+    5053868093232603138,
+    6832640404477468223
+  ],
+  "controller_guid": "ef0fbfc5cdbd14746a7e8a73fc9f3ce1"
+}

@@ -1,0 +1,3 @@
+PASS: 120s / 6000 steps; initial and final ranks; Blue passes first; Red passes Khaki > White > Blue; speed <=300km/h; road bounds; pairwise envelopes; deployment synchronized; full deployment before acceleration; retraction; end stop; repeatable replay.
+Pass times: Blue/White 32.48s, Red/Khaki 37.46s, Red/White 40.96s, Red/Blue 42.82s.
+Max speed 296.81km/h; max yaw 9.19deg/s; max lateral acceleration 2.41m/s2.

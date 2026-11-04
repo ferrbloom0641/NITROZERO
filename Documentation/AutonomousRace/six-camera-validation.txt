@@ -1,0 +1,3 @@
+PASS: 6 Cinemachine shots; existing 4 shots preserved; idempotent upgrade; all 6 Brain selections; real Red engine target in frame across deployment; rear camera outside car; fixed checkpoint position AND orientation; passing-car wind fades with distance; pause, restart and shake-off.
+Engine maximum sampled correction: 0.046m / 1.048deg. Checkpoint near/far rotational shake: 0.2683/0.000032deg.
+Headless geometry and motion validation only; final production-scene rendering and GPU VFX appearance not inspected.

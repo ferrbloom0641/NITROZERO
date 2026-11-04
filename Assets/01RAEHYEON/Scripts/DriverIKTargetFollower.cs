@@ -34,9 +34,15 @@ public sealed class DriverIKTargetFollower : MonoBehaviour
 
     private void Update()
     {
+        FollowNow();
+    }
+
+    // A late procedural wheel motion may refresh hands before the manual rig solve.
+    public void FollowNow()
+    {
         // Manual target calibration is an editor-owned value.  Never write to
         // this Transform unless the scene is actively playing.
-        if (!Application.isPlaying)
+        if (!Application.isPlaying || !isActiveAndEnabled)
         {
             return;
         }

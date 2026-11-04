@@ -1,0 +1,15 @@
+PASS: two linked final booster prefabs; 11 native Cinemachine cameras; 1681 absolute-time samples; 42m lead closes to 0m; 12m lateral spacing; red deploys first; restart retracts.
+Red: scale (5.16, 5.16, 5.16); rest bounds Center: (-0.03, 0.18, -0.23), Extents: (4.59, 2.80, 8.53); ground offset 2.646693
+Blue: scale (6.07, 6.07, 6.07); rest bounds Center: (0.03, -0.34, -0.15), Extents: (5.00, 3.15, 10.38); ground offset 3.517653
+Blue nozzle bounds Center: (0.10, -0.27, -7.59), Extents: (1.98, 1.60, 2.99)
+Shot 01 at 0.0s: position (2779.00, -0.57, -28.00)
+Shot 02 at 3.6s: position (2594.00, -17.00, -16.00)
+Shot 03 at 5.0s: position (2533.00, -18.00, -12.00)
+Shot 04 at 5.2s: position (2495.00, -22.20, -18.00)
+Shot 05 at 7.0s: position (2387.00, -19.13, -4.00)
+Shot 06 at 10.6s: position (2239.00, -17.13, 16.00)
+Shot 07 at 12.0s: position (2179.00, -20.13, 12.00)
+Shot 08 at 15.0s: position (1968.57, -19.57, -30.00)
+Shot 09 at 20.0s: position (1508.00, -19.97, -12.00)
+Shot 10 at 23.0s: position (1283.00, -22.45, -23.00)
+Shot 11 at 25.0s: position (1149.00, -17.65, -18.00)

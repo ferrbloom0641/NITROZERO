@@ -1,0 +1,5 @@
+Unity 6000.3.18f1 / Recorder 5.1.7 native compile and GPU recording smoke test.
+Two 640x360, 1-second takes: automatic replay, shot switching, MP4 finalization and metadata verified.
+PASS 01_EstablishGap.mp4: 30 frames, 1.000000s, 30.000fps
+PASS 02_RedDeployDetail.mp4: 30 frames, 1.000000s, 30.000fps
+Production default: 1920x1080, 30fps. Full 11 x 28-second production capture has not been run.

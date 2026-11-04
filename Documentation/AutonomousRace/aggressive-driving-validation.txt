@@ -1,0 +1,5 @@
+Smooth path: reserve=1.103m; 16113 actual mesh collider probes inside asphalt; max knot direction change across 1m=0.0626 degrees.
+Red measured envelope: width=7.195m length=12.437m.
+Aggression: min longitudinal envelope gap=7.07m; max lateral acceleration=2.90m/s2; max speed=296.81km/h; passes=32.48,37.46,40.96,42.82s.
+PASS: exact installed prefab instance deserialized; original scale retained; four steering/spin pivots; booster and six local VFX bindings; 120s real Red mesh simulation; effect thresholds 0.55/0.96; deploy/burn/retract/restart; Red lead; <=300km/h; road and inter-car envelope checks.
+GPU effect appearance/materials and final rendered shot were not evaluated in this headless test.

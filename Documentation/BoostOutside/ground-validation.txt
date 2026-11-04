@@ -1,0 +1,1 @@
+PASS: actual road mesh and all 8 tire vertex surfaces; 57 samples over 0-28s; ground gaps -0.000706..0.028673m. Red lowered 0.477711m, Blue lowered 0.634381m. Original small front/rear wheel height differences are preserved.

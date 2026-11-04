@@ -90,6 +90,9 @@ public class CinemachineEngineVibration : CinemachineExtension
             return;
 
         float t = CinemachineCore.CurrentTime;
+        // Let boost converge to its tighter center, then smoothly restore engine idle.
+        var boost = GetComponent<CinemachineBoostFeedback>();
+        float idleWeight = boost != null ? 1f - boost.ActiveWeight : 1f;
         float s = Seed * 37.13f;
 
         float te = t * EngineFrequency;
@@ -125,7 +128,7 @@ public class CinemachineEngineVibration : CinemachineExtension
 
         // Offset along the camera's own axes, not world axes, so the shake reads the
         // same no matter which way the shot is pointing.
-        state.PositionCorrection += state.RawOrientation * posOffset;
-        state.OrientationCorrection *= Quaternion.Euler(rotOffset);
+        state.PositionCorrection += state.RawOrientation * (posOffset * idleWeight);
+        state.OrientationCorrection *= Quaternion.Euler(rotOffset * idleWeight);
     }
 }

@@ -1,0 +1,195 @@
+using System;
+using System.IO;
+using System.Text;
+using UnityEditor;
+using UnityEngine;
+
+// Run in the isolated validation project; never edits the shared source TerrainData.
+public static class AutonomousTerrainRebuild
+{
+    const string Output = "Assets/Terrain/Racing_Autonomous_Natural.asset";
+    static Vector3[] centers;
+    static float roadY;
+    static readonly Vector3 Origin = new Vector3(-2500, -80, -2000);
+    static float Smooth(float t) { t=Mathf.Clamp01(t); return t*t*t*(t*(t*6-15)+10); }
+    static float Noise(float x,float z,float scale,float seed) => Mathf.PerlinNoise(x*scale+seed,z*scale+seed*.713f)-.5f;
+    static float Distance(float x,float z)
+    {
+        float best=float.MaxValue;
+        for(int i=1;i<centers.Length;i++)
+        {
+            Vector3 a=centers[i-1], b=centers[i];
+            float dx=b.x-a.x,dz=b.z-a.z;
+            float t=Mathf.Clamp01(((x-a.x)*dx+(z-a.z)*dz)/(dx*dx+dz*dz));
+            float ex=x-a.x-t*dx,ez=z-a.z-t*dz;
+            best=Mathf.Min(best,ex*ex+ez*ez);
+        }
+        return Mathf.Sqrt(best);
+    }
+    static float[,] Blur(float[,] src,float sigmaX,float sigmaZ)
+    {
+        int n=src.GetLength(0); var temp=new float[n,n]; var dst=new float[n,n];
+        for(int axis=0;axis<2;axis++)
+        {
+            float sigma=axis==0?sigmaX:sigmaZ; int radius=Mathf.CeilToInt(sigma*3);
+            float[] w=new float[radius*2+1];float sum=0;
+            for(int i=-radius;i<=radius;i++){w[i+radius]=Mathf.Exp(-i*i/(2*sigma*sigma));sum+=w[i+radius];}
+            for(int i=0;i<w.Length;i++)w[i]/=sum;
+            var input=axis==0?src:temp;var output=axis==0?temp:dst;
+            for(int z=0;z<n;z++)for(int x=0;x<n;x++)
+            {
+                float value=0;for(int k=-radius;k<=radius;k++)
+                    value+=w[k+radius]*input[axis==0?z:Mathf.Clamp(z+k,0,n-1),axis==0?Mathf.Clamp(x+k,0,n-1):x];
+                output[z,x]=value;
+            }
+        }
+        return dst;
+    }
+    public static void Run()
+    {
+        try
+        {
+            var report=new StringBuilder();
+            var source=AssetDatabase.LoadAssetAtPath<TerrainData>("Assets/Terrain/Racing_JCurveMoonTerrain.asset");
+            var road=AssetDatabase.LoadAssetAtPath<Mesh>("Assets/Terrain/Racing_DriftRoad.asset");
+            var verts=road.vertices; centers=new Vector3[verts.Length/2];
+            float minWidth=999,maxWidth=0;
+            for(int i=0;i<centers.Length;i++){centers[i]=(verts[2*i]+verts[2*i+1])*.5f;float width=Vector3.Distance(verts[2*i],verts[2*i+1]);minWidth=Mathf.Min(minWidth,width);maxWidth=Mathf.Max(maxWidth,width);}
+            roadY=centers[0].y;
+            report.AppendLine($"Road: {centers.Length} actual mesh cross sections, Y={roadY}, width={minWidth:F4}..{maxWidth:F4}m. Mesh unchanged.");
+            var data=UnityEngine.Object.Instantiate(source); data.name="Racing Autonomous Natural Lunar Terrain";
+            int n=data.heightmapResolution;float dx=data.size.x/(n-1),dz=data.size.z/(n-1);
+            var original=source.GetHeights(0,0,n,n);
+            // One spatial convolution removes old hard cut boundaries. Broad landforms remain sourced from the existing heightmap.
+            var baseline=Blur(original,100/dx,100/dz);
+            var heights=new float[n,n];float floor=roadY-.20f;
+            float maxSlope=0,beforeSlope=0,maxShoulderSlope=0,maxClearanceHeight=float.MinValue;
+            double deltaSq=0;
+            for(int z=0;z<n;z++)for(int x=0;x<n;x++)
+            {
+                float wx=Origin.x+x*dx,wz=Origin.z+z*dz,d=Distance(wx,wz);
+                float baseY=Origin.y+baseline[z,x]*data.size.y;
+                float width=330+Noise(wx,wz,.0018f,31)*100+Mathf.Max(0,baseY-floor)*2.2f;
+                float t=Mathf.Clamp01((d-15)/width),blend=Smooth(t);
+                // Cartesian noise, with zero amplitude and derivative at both joins. No radial bands or extra craters.
+                float rough=Noise(wx,wz,.009f,71)*2.0f+Noise(wx,wz,.031f,113)*.48f;
+                float outerRough=Noise(wx,wz,.006f,157)*2.6f+Noise(wx,wz,.019f,203)*.65f;
+                float target=Mathf.Lerp(floor,baseY+outerRough,blend)+rough*16*t*t*(1-t)*(1-t);
+                heights[z,x]=Mathf.Clamp01((target-Origin.y)/data.size.y);
+                double delta=target-(Origin.y+original[z,x]*data.size.y);deltaSq+=delta*delta;
+                if(d<=15)maxClearanceHeight=Mathf.Max(maxClearanceHeight,target);
+            }
+            for(int z=1;z<n-1;z++)for(int x=1;x<n-1;x++)
+            {
+                float sx=Mathf.Abs(heights[z,x+1]-heights[z,x])*data.size.y/dx,sz=Mathf.Abs(heights[z+1,x]-heights[z,x])*data.size.y/dz;
+                maxSlope=Mathf.Max(maxSlope,sx,sz);
+                beforeSlope=Mathf.Max(beforeSlope,Mathf.Abs(original[z,x+1]-original[z,x])*data.size.y/dx,Mathf.Abs(original[z+1,x]-original[z,x])*data.size.y/dz);
+                if(Distance(Origin.x+x*dx,Origin.z+z*dz)<50)maxShoulderSlope=Mathf.Max(maxShoulderSlope,sx,sz);
+            }
+            data.SetHeights(0,0,heights);
+            // Clone layer settings so matte adjustments cannot affect any other scene.
+            var layers=data.terrainLayers;
+            for(int i=0;i<layers.Length;i++)
+            {
+                if(layers[i]==null)throw new Exception("Missing source terrain layer "+i);
+                var layer=UnityEngine.Object.Instantiate(layers[i]);layer.metallic=0;layer.smoothness=0;layer.normalScale=Mathf.Min(layer.normalScale,.5f);
+                string lp=$"Assets/Terrain/Racing_Autonomous_Layer{i}.terrainlayer";
+                if(AssetDatabase.LoadAssetAtPath<TerrainLayer>(lp)!=null)AssetDatabase.DeleteAsset(lp); AssetDatabase.CreateAsset(layer,lp);layers[i]=layer;
+                report.AppendLine($"Layer {i}: {layer.diffuseTexture?.name}; tile={layer.tileSize}; metallic=0; smoothness=0; normal={layer.normalScale}");
+            }
+            data.terrainLayers=layers;
+            int an=data.alphamapResolution,ln=layers.Length;var alpha=data.GetAlphamaps(0,0,an,an);
+            // Blend spatially filtered existing weights. This preserves the palette and removes narrow painted shoulder rings.
+            for(int l=0;l<ln;l++)
+            {
+                var channel=new float[an,an];for(int z=0;z<an;z++)for(int x=0;x<an;x++)channel[z,x]=alpha[z,x,l];
+                var filtered=Blur(channel,35/(data.size.x/(an-1)),35/(data.size.z/(an-1)));
+                for(int z=0;z<an;z++)for(int x=0;x<an;x++)alpha[z,x,l]=filtered[z,x];
+            }
+            float maxWeightError=0;
+            for(int z=0;z<an;z++)for(int x=0;x<an;x++)
+            {
+                float sum=0;for(int l=0;l<ln;l++)sum+=alpha[z,x,l];
+                for(int l=0;l<ln;l++)alpha[z,x,l]/=sum;
+                float normalized=0;for(int l=0;l<ln;l++)normalized+=alpha[z,x,l];maxWeightError=Mathf.Max(maxWeightError,Mathf.Abs(normalized-1));
+            }
+            data.SetAlphamaps(0,0,alpha);
+            Repaint(data);
+            File.WriteAllText("metrics.txt", $"Slopes before={beforeSlope}, after={maxSlope}, shoulder={maxShoulderSlope}"); if(maxSlope>1.2f||maxShoulderSlope>.35f){ Capture(data,road); throw new Exception($"Continuity check failed: slopes {maxSlope}, shoulder {maxShoulderSlope}"); }
+            if(AssetDatabase.LoadAssetAtPath<TerrainData>(Output)!=null)AssetDatabase.DeleteAsset(Output);
+            AssetDatabase.CreateAsset(data,Output);AssetDatabase.SaveAssets();
+            report.AppendLine($"Heightmap {n}x{n}; size={data.size}; existing source preserved. RMS change={Math.Sqrt(deltaSq/(n*(double)n)):F3}m.");
+            report.AppendLine($"Maximum neighbor rise/run: before={beforeSlope:F5}; after={maxSlope:F5}; within 50m of road={maxShoulderSlope:F5}.");
+            report.AppendLine($"Road foundation clearance={roadY-maxClearanceHeight:F3}m; alpha normalization max error={maxWeightError}.");
+            // Check interpolated terrain over the entire asphalt, including triangle chord corners.
+            float minGap=999;
+            for(int i=1;i<centers.Length;i++)for(float t=0;t<=1;t+=.01f)for(int s=0;s<=10;s++)
+            {
+                var a=Vector3.Lerp(verts[2*(i-1)],verts[2*i],t);var b=Vector3.Lerp(verts[2*(i-1)+1],verts[2*i+1],t);var p=Vector3.Lerp(a,b,s/10f);
+                if(p.x<Origin.x||p.x>2500||p.z<Origin.z||p.z>2000)continue;
+                float y=Origin.y+data.GetInterpolatedHeight((p.x-Origin.x)/data.size.x,(p.z-Origin.z)/data.size.z);
+                minGap=Mathf.Min(minGap,p.y-y);
+            }
+            report.AppendLine($"Dense interpolated asphalt clearance minimum={minGap:F5}m.");
+            if(minGap<.1f)throw new Exception("Road intersection detected.");
+            File.WriteAllText("validation.txt",report.ToString()+"PASS\n");
+            Capture(data,road);
+            EditorApplication.Exit(0);
+        }
+        catch(Exception e){File.WriteAllText("failure.txt",e.ToString());Debug.LogException(e);EditorApplication.Exit(1);}
+    }
+    static void Repaint(TerrainData data)
+    {
+        Vector2[] scales={new Vector2(67,83),new Vector2(109,97),new Vector2(47,59),new Vector2(79,113),new Vector2(151,127)};
+        var layers=data.terrainLayers;
+        for(int i=0;i<layers.Length;i++)
+        {
+            layers[i].tileSize=scales[i%scales.Length];layers[i].tileOffset=new Vector2(13.7f+i*31.3f,27.1f+i*19.7f);EditorUtility.SetDirty(layers[i]);
+        }
+        int n=data.alphamapResolution,ln=layers.Length;var weights=data.GetAlphamaps(0,0,n,n);
+        float[] proportions={.36f,.33f,.16f,.10f,.05f};
+        for(int z=0;z<n;z++)for(int x=0;x<n;x++)
+        {
+            float wx=Origin.x+x*data.size.x/(n-1),wz=Origin.z+z*data.size.z/(n-1),sum=0;
+            for(int l=0;l<ln;l++)
+            {
+                float variation=1+Noise(wx,wz,.0027f,43+l*37)*1.2f+Noise(wx,wz,.012f,153+l*29)*.5f;
+                weights[z,x,l]=.15f*weights[z,x,l]+.85f*proportions[l%5]*variation;sum+=weights[z,x,l];
+            }
+            for(int l=0;l<ln;l++)weights[z,x,l]/=sum;
+        }
+        data.SetAlphamaps(0,0,weights);EditorUtility.SetDirty(data);
+    }
+    public static void Retexture()
+    {
+        try
+        {
+            var data=AssetDatabase.LoadAssetAtPath<TerrainData>(Output);Repaint(data);AssetDatabase.SaveAssets();
+            Capture(data,AssetDatabase.LoadAssetAtPath<Mesh>("Assets/Terrain/Racing_DriftRoad.asset"));
+            string report=File.ReadAllText("validation.txt").Replace("PASS\n","");
+            report+="Final surface: 5 non-square texture scales, independent offsets, 2D noise blend; weights normalized.\n";
+            foreach(var layer in data.terrainLayers)report+=$"Final layer {layer.name}: tile={layer.tileSize}, offset={layer.tileOffset}\n";
+            File.WriteAllText("validation.txt",report+"PASS\n");EditorApplication.Exit(0);
+        }
+        catch(Exception e){File.WriteAllText("failure.txt",e.ToString());EditorApplication.Exit(1);}
+    }
+    static void Capture(TerrainData data,Mesh road)
+    {
+        var terrain=Terrain.CreateTerrainGameObject(data).GetComponent<Terrain>();terrain.transform.position=Origin;terrain.heightmapPixelError=1;
+        var mat=new Material(Shader.Find("Nature/Terrain/Diffuse"));mat.SetFloat("_Glossiness",0);terrain.materialTemplate=mat;
+        var go=new GameObject("Unchanged road");go.AddComponent<MeshFilter>().sharedMesh=road;var rm=new Material(Shader.Find("Standard"));rm.color=new Color(.055f,.055f,.055f);rm.SetFloat("_Glossiness",0);go.AddComponent<MeshRenderer>().sharedMaterial=rm;
+        var light=new GameObject("Inspection sun").AddComponent<Light>();light.type=LightType.Directional;light.intensity=1.3f;light.transform.rotation=Quaternion.Euler(28,-40,0);light.shadows=LightShadows.Soft;
+        RenderSettings.ambientMode=UnityEngine.Rendering.AmbientMode.Flat;RenderSettings.ambientLight=new Color(.22f,.22f,.22f);
+        var cam=new GameObject("Inspection camera").AddComponent<Camera>();cam.clearFlags=CameraClearFlags.SolidColor;cam.backgroundColor=new Color(.015f,.015f,.022f);cam.farClipPlane=12000;cam.nearClipPlane=1;
+        Shot(cam,new Vector3(-1700,1900,-2600),new Vector3(-400,0,0),"overview.png");
+        Shot(cam,new Vector3(-1050,-12,597),new Vector3(-120,10,530),"road-approach.png");
+        Shot(cam,new Vector3(640,140,-440),new Vector3(-80,5,220),"curve-shoulder.png");
+    }
+    static void Shot(Camera c,Vector3 position,Vector3 target,string file)
+    {
+        c.transform.position=position;c.transform.LookAt(target);c.fieldOfView=65;
+        var rt=new RenderTexture(1600,900,24);c.targetTexture=rt;c.Render();RenderTexture.active=rt;
+        var tex=new Texture2D(1600,900,TextureFormat.RGB24,false);tex.ReadPixels(new Rect(0,0,1600,900),0,0);tex.Apply();File.WriteAllBytes(file,tex.EncodeToPNG());
+        RenderTexture.active=null;c.targetTexture=null;UnityEngine.Object.DestroyImmediate(tex);UnityEngine.Object.DestroyImmediate(rt);
+    }
+}

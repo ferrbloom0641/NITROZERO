@@ -19,14 +19,9 @@ public class CinemachineSatelliteOrbit : MonoBehaviour
     [SerializeField] private AnimationCurve movementCurve =
         AnimationCurve.EaseInOut(0f, 0f, 1f, 1f);
 
-    [Header("Space Floating")]
-    [Tooltip("이동 중 천천히 기우는 최대 각도")]
-    [Range(0f, 20f)]
-    [SerializeField] private float rollAmount = 3f;
-
-    [Tooltip("기울어지는 속도")]
-    [Min(0f)]
-    [SerializeField] private float rollSpeed = 0.08f;
+    [Header("One Direction Rotation")]
+    [Tooltip("카메라 앞축 기준 초당 회전 각도. 음수는 반대 방향, 0은 회전 없음")]
+    [SerializeField] private float rollSpeed = 0.25f;
 
     [Header("Playback")]
     [SerializeField] private bool playOnStart = true;
@@ -52,16 +47,17 @@ public class CinemachineSatelliteOrbit : MonoBehaviour
         if (!captured)
             CaptureStart();
 
-        elapsed += Time.deltaTime;
-        float normalizedTime = Mathf.Clamp01(elapsed / travelDuration);
+        float duration = Mathf.Max(0.01f, travelDuration);
+        elapsed = Mathf.Min(elapsed + Time.deltaTime, duration);
+        float normalizedTime = elapsed / duration;
         float distanceT = movementCurve.Evaluate(normalizedTime);
 
         // 시작할 때 바라보던 정면 방향으로만 이동합니다.
         transform.position =
             startPosition + forwardDirection * (travelDistance * distanceT);
 
-        // 진행 방향은 바꾸지 않고 카메라의 앞축을 중심으로만 천천히 기울입니다.
-        float roll = Mathf.Sin(elapsed * rollSpeed * Mathf.PI * 2f) * rollAmount;
+        // 왕복 흔들림 없이 앞축을 중심으로 일정한 속도로 한 방향 회전합니다.
+        float roll = elapsed * rollSpeed;
         transform.rotation =
             startRotation * Quaternion.AngleAxis(roll, Vector3.forward);
 

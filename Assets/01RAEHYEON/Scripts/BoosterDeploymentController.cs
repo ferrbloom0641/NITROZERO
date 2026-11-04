@@ -198,12 +198,16 @@ public sealed class BoosterDeploymentController : MonoBehaviour
     private readonly List<Light> internalHeatLights = new List<Light>();
     private bool initialized;
     private float targetSequenceAmount;
+    private Transform cinematicOwner;
+
+    public void SetCinematicOwner(Transform owner) { cinematicOwner = owner; }
 
     public float DeployAmount => masterSequenceAmount;
 
     private void Awake()
     {
         InitializeOnce();
+        if (cinematicOwner != null) { ApplySequence(); return; }
         targetSequenceAmount = startDeployed ? 1f : 0f;
         masterSequenceAmount = targetSequenceAmount;
         ApplySequence();
@@ -236,7 +240,7 @@ public sealed class BoosterDeploymentController : MonoBehaviour
 
         float sequence = Mathf.Clamp01(masterSequenceAmount);
 
-        Transform searchRoot = transform.root;
+        Transform searchRoot = cinematicOwner != null ? cinematicOwner : transform.root;
         Transform activeWingRoot = FindActiveDescendant(searchRoot, "WingDeploymentRoot");
         wingClosedRotations[0] = Quaternion.Euler(longLeftWingClosedEuler);
         wingClosedRotations[1] = Quaternion.Euler(longRightWingClosedEuler);
@@ -492,7 +496,7 @@ public sealed class BoosterDeploymentController : MonoBehaviour
 
     public void AutoBindBoosterFx()
     {
-        Transform searchRoot = transform.root;
+        Transform searchRoot = cinematicOwner != null ? cinematicOwner : transform.root;
         if (searchRoot == null) searchRoot = transform;
 
         // 1. Booster_effect 상위 오브젝트 탐색
@@ -980,6 +984,14 @@ public sealed class BoosterDeploymentController : MonoBehaviour
     {
         masterSequenceAmount = Mathf.Clamp01(value);
         targetSequenceAmount = masterSequenceAmount;
+    }
+
+    // Sequencer ownership: apply immediately, including while this component's Update is disabled.
+    public void ApplyCinematicAmount(float value)
+    {
+        InitializeOnce();
+        SetDeployAmount(value);
+        ApplySequence();
     }
 
     public void ToggleBoostMode() => targetSequenceAmount = targetSequenceAmount >= 0.5f ? 0f : 1f;

@@ -1,0 +1,1 @@
+PASS: actual scene-scale red prefab plus five differently scaled wheel rigs with deliberately stale spin radii; 120s story/deployment/retraction, 144000 asphalt contact checks. Gap min/max=0.00500/0.02782m. Six-car production render not inspected.

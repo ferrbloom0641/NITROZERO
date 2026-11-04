@@ -5684,6 +5684,7 @@ GameObject:
   m_PrefabAsset: {fileID: 0}
   serializedVersion: 6
   m_Component:
+  - component: {fileID: 839180001110000001}
   - component: {fileID: 5908659531008590322}
   m_Layer: 0
   m_Name: Animation_BlueCarCockpit
@@ -8880,7 +8881,7 @@ PlayableDirector:
   m_Enabled: 1
   serializedVersion: 3
   m_PlayableAsset: {fileID: 11400000, guid: 6230c760a9e28ca44a4e947e1975373f, type: 2}
-  m_InitialState: 1
+  m_InitialState: 0
   m_WrapMode: 2
   m_DirectorUpdateMode: 1
   m_InitialTime: 0
@@ -10796,21 +10797,15 @@ MonoBehaviour:
   m_GameObject: {fileID: 7743681573040486501}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: e5f05e0071e7a20498ddcb5aaf0bf256, type: 3}
+  m_Script: {fileID: 11500000, guid: 245d392dbc2546dd81c587bce9aa0f84, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::DriverHandTargetBlend
+  m_EditorClassIdentifier: Assembly-CSharp::V2ButtonHandDriver
+  rigBuilder: {fileID: 5451917318618217291}
   steeringSource: {fileID: 5560208375822430056}
   shifterSource: {fileID: 8784550695301659777}
   shifterBlend: 0
-  boosterSource: {fileID: 0}
-  boosterBlend: 0
-  handbrakeSource: {fileID: 0}
-  handbrakeBlend: 0
-  gunSource: {fileID: 0}
-  gunBlend: 0
   buttonSource: {fileID: 3817161977947865906}
   buttonBlend: 0
-  rightArmIK: {fileID: 0}
 --- !u!95 &5446805542531548915
 Animator:
   serializedVersion: 7
@@ -13345,3 +13340,34 @@ Transform:
   - {fileID: 3070958318511789887}
   m_Father: {fileID: 7649574524980439915}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &839180001110000001
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3880279067143120030}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2a853e2149ff7edaf6cff38f2c3f1a70, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CockpitBoostFeedback
+  steeringPivot: {fileID: 2287723027087653427}
+  steeringAxis: {x: 0, y: 1, z: 0}
+  lateHandFollowers:
+  - {fileID: 115743688905030368}
+  spaceKeyEnabled: 1
+  duration: 6
+  convergenceTime: 2.2
+  releaseTime: 0.4
+  intensity: 1
+  seed: 2
+  initialSteeringAngle: 24
+  sustainedSteeringAngle: 9
+  steeringTremor: 1.5
+  initialPositionAmplitude: 0.09
+  sustainedPositionAmplitude: 0.006
+  initialRotationAmplitude: 4.5
+  sustainedRotationAmplitude: 0.55
+  initialFrequency: 3.5
+  sustainedFrequency: 21

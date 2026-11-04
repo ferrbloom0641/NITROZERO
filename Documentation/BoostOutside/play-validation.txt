@@ -1,0 +1,1 @@
+PASS: 180 native Play frames; all 11 Cinemachine cameras selected by Brain; both vehicle ignition effect bindings and thresholds; late-update presentation; restart and repeatable 10s seek. GPU VFX appearance is not covered by this geometry-only validation project.

@@ -1,0 +1,13 @@
+PASS: native VFX live particle peak=651
+frame=0 smoke=-2 head=(347.45, 358.44, 356.59) missile=(-7.14, 3.08, -8.55)
+VFX bounds=Center: (1927.86, -26.57, 2.53), Extents: (0.00, 0.00, 0.00) exhaust=(1927.86, -26.57, 2.53) camera=(1920.89, -26.15, 0.00) culled=True
+frame=108 smoke=223 head=(343.13, 344.44, 358.21) missile=(-3.00, 3.08, -8.55)
+VFX bounds=Center: (1925.20, -26.56, 2.53), Extents: (1.74, 0.12, 1.12) exhaust=(1923.55, -26.57, 2.45) camera=(1920.23, -26.15, -0.34) culled=False
+frame=168 smoke=287 head=(342.60, 354.67, 356.93) missile=(-1.50, 3.08, -8.55)
+VFX bounds=Center: (1923.54, -26.56, 2.47), Extents: (1.81, 0.12, 1.65) exhaust=(1921.85, -26.57, 2.22) camera=(1919.44, -26.15, -0.66) culled=False
+frame=228 smoke=469 head=(342.15, 10.61, 354.78) missile=(0.00, 3.08, -8.55)
+VFX bounds=Center: (1922.79, -26.55, 2.53), Extents: (2.64, 0.13, 2.63) exhaust=(1920.27, -26.57, 2.37) camera=(1918.49, -26.15, -0.92) culled=False
+frame=330 smoke=555 head=(344.06, 12.12, 354.84) missile=(2.55, 3.08, -8.55)
+VFX bounds=Center: (1920.34, -26.55, 2.89), Extents: (2.01, 0.13, 2.11) exhaust=(1918.46, -26.57, 3.61) camera=(1916.93, -26.15, -1.05) culled=False
+frame=509 smoke=458 head=(347.45, 358.44, 356.59) missile=(13.34, 3.08, -8.55)
+VFX bounds=Center: (1917.81, -26.54, 8.26), Extents: (1.47, 0.13, 5.46) exhaust=(1916.77, -26.57, 13.63) camera=(1915.66, -26.15, -0.84) culled=False

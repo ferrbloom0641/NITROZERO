@@ -1,0 +1,21 @@
+fileFormatVersion: 2
+guid: 4a1d97a43a774617959257d90144a111
+ModelImporter:
+  serializedVersion: 22200
+  internalIDToNameTable:
+  - first:
+      43: 4300000
+    second: MoonSurfaceCloseup
+  externalObjects: {}
+  materials:
+    materialImportMode: 0
+  meshes:
+    globalScale: 1
+    meshCompression: 0
+    addColliders: 0
+    useFileUnits: 1
+    isReadable: 0
+    indexFormat: 2
+  tangentSpace:
+    normalImportMode: 0
+    tangentImportMode: 2

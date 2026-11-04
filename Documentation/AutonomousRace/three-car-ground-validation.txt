@@ -1,0 +1,4 @@
+Green_Car_Final actual rotating tyre vertex gap min/max: 0.002979279 / 0.01890564 metres
+extraCar1_Final actual rotating tyre vertex gap min/max: 0.002183914 / 0.008462906 metres
+Blue_Car_Final actual rotating tyre vertex gap min/max: 0.002975464 / 0.01943016 metres
+PASS: actual White, Khaki and Blue scene hierarchies/scales; 120 seconds, 7200 rotating mesh vertex/asphalt checks; startup and corner/story traversal. Headless geometry validation; final render not inspected.

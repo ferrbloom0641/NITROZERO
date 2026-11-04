@@ -1,0 +1,1 @@
+PASS: 11 cameras, 841 time samples at 30fps; maximum translation 0.0416m, rotation 0.2238 degrees; seek/repeat matches exactly, no accumulation. Native Unity compile passed. Final rendered appearance not reviewed.

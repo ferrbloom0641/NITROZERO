@@ -1,0 +1,1 @@
+PASS: actual road mesh and measured six-vehicle envelope sizes, 6000 steps/120s. road=5372.09m, lane=12.99997m, minimum gap=9.999758m, rank changes=7; speed, separation, lane bounds, end stop, deterministic restart.

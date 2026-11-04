@@ -1,0 +1,1 @@
+PASS: six simultaneous 320x180 MP4 files at 30fps, 0.5s, 3x race playback; source cameras synchronized; capture cleanup completed. Folder: Recordings/Race_All_20260917_150914_474

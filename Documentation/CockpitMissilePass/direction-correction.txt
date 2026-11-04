@@ -1,0 +1,6 @@
+PASS: passenger-side entry x=+4.5 to driver-side exit x=-4.5
+PASS: nose points along flight; driver pass at 4.761 seconds
+PASS: only two path markers and frame-zero missile pose changed
+Head tracking and rear exhaust use the same reversed path automatically.
+Verification: saved geometry and existing controller logic; no new Play-mode capture.
+Scene SHA256: 020c1b577da9c2a23e16c1da7fa0abd03cb489b6c17f5294000f3ef125dad90e

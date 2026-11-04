@@ -1,0 +1,2 @@
+Max camera/current-shot position error: 6.944580m. Min forward advance: 1.733154m. Other brain disabled during take: False. Original enabled/disabled states restored: True. 360 actual Play Mode frames; all six shots; 2.5x/3x; alternating 24/30/60/90 fps deltas.
+FAIL

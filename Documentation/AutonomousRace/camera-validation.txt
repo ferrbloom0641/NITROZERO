@@ -1,0 +1,3 @@
+PASS: Cinemachine 3.1.7 compile; four Brain selections; isolated channel; actual road + six measured car envelopes; 21 pack framing samples across 42s; 36m/8s dolly; fixed-position moving-aim pan; pause and restart.
+Actual production-scene render still requires visual review.
+PASS: Unity loaded the exact installed camera blocks with remapped file IDs; four shot components, Cinemachine cameras, output camera and Brain references resolved.

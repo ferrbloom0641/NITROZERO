@@ -1,0 +1,11 @@
+PASS: Original missile smoke graph and exhaust are bound
+PASS: Dedicated Timeline starts on Play
+PASS: Timeline graph drives the shot at the requested time
+PASS: No competing autoplay directors
+PASS: Reverse seeking is deterministic for missile and head
+PASS: Driver head visibly follows the missile
+PASS: CAM_06 framing stays fixed relative to the car
+PASS: mixamorig:LeftHand seated pose preserved
+PASS: mixamorig:RightHand seated pose preserved
+PASS: Drift rotates exactly 70 degrees
+PASS: Reset restores authored pose

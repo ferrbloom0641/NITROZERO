@@ -1,0 +1,9 @@
+Road length: 5372.09m; usable half width: 12.99997m; lanes=2
+Blue_Car_Final half width=5.283631 half length=5.579835 ride height=1.311121
+Green_Car_Final half width=3.146608 half length=6.295167 ride height=-0.2592454
+extraCar1_Final half width=7.591066 half length=6.345704 ride height=1.02431
+Red_Car_Final half width=5.925172 half length=5.840821 ride height=1.24821
+extraCar2_Final half width=3.315858 half length=6.022462 ride height=-0.4060597
+extraCar3_Final half width=3.90027 half length=5.832276 ride height=0.2492168
+Lane decisions=13; rank changes=9
+PASS: 120 seconds / 6000 steps; six vehicles; bounds, separation, overtaking, end stop, deterministic restart. Rank changes: 9

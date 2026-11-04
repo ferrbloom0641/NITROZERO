@@ -1,0 +1,2 @@
+Old bounds inflation: 0.320966m. Actual spinning tyre/asphalt gap: 0.005060 to 0.014599m; 2400 checks over 120 seconds.
+PASS: actual scene-scale Red booster prefab, rotating mesh vertices, deploy/full boost/retract and restart. Headless geometry only; final render not inspected.
