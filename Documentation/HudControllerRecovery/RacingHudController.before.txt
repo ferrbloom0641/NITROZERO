@@ -1,0 +1,185 @@
+using UnityEngine;
+using UnityEngine.UIElements;
+
+public class RacingHudController : MonoBehaviour
+{
+    [Header("UI Document 및 카메라 참조")]
+    [SerializeField] private UIDocument uiDocument;
+    [SerializeField] private Camera viewCamera;
+
+    [Header("HUD 표시 및 카메라스위치 설정")]
+    [SerializeField] private bool isHudVisible = true;
+    [SerializeField] private bool isFirstPersonHud = true;
+    [SerializeField] private bool isFirstPerson = true;
+    [SerializeField] private bool enableHelmetHudCurvature = true;
+
+    [Header("시동 연출 (Startup) 관련 설정")]
+    [SerializeField] private bool startupShieldClosed = false;
+    [Range(0f, 1f)][SerializeField] private float startupOpacity = 1f;
+    [Range(0f, 1f)][SerializeField] private float startupShieldCoverage = 1f;
+    [Range(0f, 1f)][SerializeField] private float startupShieldOpacity = 1f;
+
+    [Header("게이지 설정 수치")]
+    [Range(0f, 100f)][SerializeField] private float currentEngine = 80f;
+    [Range(0f, 100f)][SerializeField] private float currentCoolant = 90f;
+    [Range(0f, 100f)][SerializeField] private float currentFuel = 50f;
+    [Range(0f, 100f)][SerializeField] private float currentBoost = 100f;
+    [SerializeField] private float currentTimerSeconds = 0f;
+
+    [Header("타이머 기반 자동 변경 옵션")]
+    [SerializeField] private bool useTimedBoostConsumption = false;
+    [SerializeField] private float timedBoostStartSeconds = 0f;
+    [SerializeField] private float timedBoostDurationSeconds = 5f;
+    [Range(0f, 100f)][SerializeField] private float timedBoostEndPercent = 0f;
+
+    // ==========================================
+    // 외부 스크립트 참조용 Public 프로퍼티/필드 (에러 완벽 대응)
+    // ==========================================
+    public Camera ViewCamera => viewCamera;
+    public bool IsHudVisible => isHudVisible;
+    public bool IsFirstPersonHud => isFirstPersonHud;
+    public bool IsFirstPerson => isFirstPerson;
+    public bool EnableHelmetHudCurvature => enableHelmetHudCurvature;
+
+    public bool StartupShieldClosed => startupShieldClosed;
+    public float StartupOpacity => startupOpacity;
+    public float StartupShieldCoverage => startupShieldCoverage;
+    public float StartupShieldOpacity => startupShieldOpacity;
+
+    public float CurrentEngineValue => currentEngine;
+    public float CurrentCoolantValue => currentCoolant;
+    public float CurrentFuelValue => currentFuel;
+    public float CurrentBoostValue => currentBoost;
+    public float CurrentTimerSeconds => currentTimerSeconds;
+
+    // UI Elements
+    private VisualElement boundRoot;
+    private Label engineValueLabel;
+    private VisualElement engineFill;
+    private Label coolantValueLabel;
+    private VisualElement coolantFill;
+    private Label fuelValueLabel;
+    private VisualElement fuelFill;
+    private Label boostValueLabel;
+    private VisualElement boostFill;
+
+    private float timedProgressElapsed = 0f;
+
+    private void Awake()
+    {
+        if (uiDocument == null) uiDocument = GetComponent<UIDocument>();
+        if (viewCamera == null) viewCamera = Camera.main;
+    }
+
+    private void OnEnable()
+    {
+        BindVisualTree();
+    }
+
+    private void Update()
+    {
+        // 1. boundRoot 체크를 통한 VisualTree 인스턴스 변경 감지
+        if (uiDocument != null && uiDocument.rootVisualElement != null && uiDocument.rootVisualElement != boundRoot)
+        {
+            BindVisualTree();
+        }
+
+        // 2. 타이머 수치 업데이트
+        if (Application.isPlaying)
+        {
+            currentTimerSeconds += Time.deltaTime;
+        }
+
+        // 3. 타이머 기반 부스트 자동 소비 처리
+        if (useTimedBoostConsumption && Application.isPlaying)
+        {
+            timedProgressElapsed += Time.deltaTime;
+            float boostTime = Mathf.InverseLerp(
+                timedBoostStartSeconds,
+                timedBoostStartSeconds + Mathf.Max(0.01f, timedBoostDurationSeconds),
+                timedProgressElapsed
+            );
+            currentBoost = Mathf.Lerp(currentBoost, timedBoostEndPercent, boostTime);
+        }
+
+        // 4. UI 및 게이지 시각화 갱신
+        UpdateGauges();
+    }
+
+    private void BindVisualTree()
+    {
+        if (uiDocument == null || uiDocument.rootVisualElement == null) return;
+
+        boundRoot = uiDocument.rootVisualElement;
+
+        engineValueLabel = boundRoot.Q<Label>("EngineValueLabel");
+        engineFill = boundRoot.Q<VisualElement>("EngineFill");
+
+        coolantValueLabel = boundRoot.Q<Label>("CoolantValueLabel");
+        coolantFill = boundRoot.Q<VisualElement>("CoolantFill");
+
+        fuelValueLabel = boundRoot.Q<Label>("FuelValueLabel");
+        fuelFill = boundRoot.Q<VisualElement>("FuelFill");
+
+        boostValueLabel = boundRoot.Q<Label>("BoostValueLabel");
+        boostFill = boundRoot.Q<VisualElement>("BoostFill");
+
+        UpdateGauges();
+    }
+
+    private void UpdateGauges()
+    {
+        if (boundRoot != null)
+        {
+            boundRoot.style.display = isHudVisible ? DisplayStyle.Flex : DisplayStyle.None;
+        }
+
+        if (!isHudVisible) return;
+
+        // Engine
+        if (engineValueLabel != null) engineValueLabel.text = $"{Mathf.RoundToInt(currentEngine)}";
+        if (engineFill != null) engineFill.style.width = Length.Percent(Mathf.Clamp01(currentEngine / 100f) * 100f);
+
+        // Coolant
+        if (coolantValueLabel != null) coolantValueLabel.text = $"{Mathf.RoundToInt(currentCoolant)}";
+        if (coolantFill != null) coolantFill.style.width = Length.Percent(Mathf.Clamp01(currentCoolant / 100f) * 100f);
+
+        // Fuel
+        if (fuelValueLabel != null) fuelValueLabel.text = $"{Mathf.RoundToInt(currentFuel)}";
+        if (fuelFill != null) fuelFill.style.width = Length.Percent(Mathf.Clamp01(currentFuel / 100f) * 100f);
+
+        // Boost
+        if (boostValueLabel != null) boostValueLabel.text = $"{Mathf.RoundToInt(currentBoost)}%";
+        if (boostFill != null) boostFill.style.width = Length.Percent(Mathf.Clamp01(currentBoost / 100f) * 100f);
+    }
+
+    // ==========================================
+    // 외부 이벤트 제어용 Public API (UI 직접 변경 방지)
+    // ==========================================
+
+    public void SetHudVisibility(bool visible, bool isFirstPerson = true)
+    {
+        isHudVisible = visible;
+        isFirstPersonHud = isFirstPerson;
+        this.isFirstPerson = isFirstPerson;
+    }
+
+    public void SetGaugeValues(float engine, float coolant, float fuel, float boost)
+    {
+        currentEngine = Mathf.Clamp(engine, 0f, 100f);
+        currentCoolant = Mathf.Clamp(coolant, 0f, 100f);
+        currentFuel = Mathf.Clamp(fuel, 0f, 100f);
+        currentBoost = Mathf.Clamp(boost, 0f, 100f);
+        UpdateGauges();
+    }
+
+    public void SetBoost(float value, bool stopTimedConsumption = true)
+    {
+        currentBoost = Mathf.Clamp(value, 0f, 100f);
+        if (stopTimedConsumption)
+        {
+            useTimedBoostConsumption = false;
+        }
+        UpdateGauges();
+    }
+}

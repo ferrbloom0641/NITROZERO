@@ -8,6 +8,9 @@ namespace RacingUI
     public partial class NavigationMap : VisualElement
     {
         float roadWidthValue = .55f, horizonValue = .22f, hazeValue = 1f;
+        float routeCurveAmountValue = .15f;
+        float routeFadeStartValue = .84f, routeFarOpacityValue = .42f;
+        bool straightRouteValue;
         float lateral, heading, raceProgress, progressOffset = .075f;
         [UxmlAttribute] public bool amberRoute { get; set; }
         [UxmlAttribute] public bool referenceMarker { get; set; }
@@ -21,10 +24,19 @@ namespace RacingUI
         public float horizon { get => horizonValue; set { horizonValue = Mathf.Clamp(value, .1f, .45f); MarkDirtyRepaint(); } }
         [UxmlAttribute]
         public float haze { get => hazeValue; set { hazeValue = Mathf.Clamp01(value); MarkDirtyRepaint(); } }
+        [UxmlAttribute]
+        public float routeCurveAmount { get => routeCurveAmountValue; set { routeCurveAmountValue = Mathf.Clamp(value, .05f, .28f); MarkDirtyRepaint(); } }
+        [UxmlAttribute]
+        public float routeFadeStart { get => routeFadeStartValue; set { routeFadeStartValue = Mathf.Clamp(value, .35f, .9f); MarkDirtyRepaint(); } }
+        [UxmlAttribute]
+        public float routeFarOpacity { get => routeFarOpacityValue; set { routeFarOpacityValue = Mathf.Clamp(value, .08f, .75f); MarkDirtyRepaint(); } }
+        [UxmlAttribute]
+        public bool straightRoute { get => straightRouteValue; set { straightRouteValue = value; MarkDirtyRepaint(); } }
 
         public NavigationMap()
         {
             pickingMode = PickingMode.Position;
+            style.overflow = Overflow.Hidden;
             generateVisualContent += Draw;
             RegisterCallback<GeometryChangedEvent>(_ => MarkDirtyRepaint());
         }
@@ -54,6 +66,61 @@ namespace RacingUI
         {
             p.fillColor = color; p.BeginPath(); p.MoveTo(a); p.LineTo(b);
             p.LineTo(c); p.LineTo(d); p.ClosePath(); p.Fill();
+        }
+        Vector2 AmberRoutePoint(Rect r, float progress)
+        {
+            float t = Mathf.Clamp01(progress);
+            if (straightRouteValue)
+                // Keep the straight route inside the map artwork. The old -4%~104%
+                // range crossed the header/footer and made the line look as if it
+                // pierced the minimap frame.
+                return new Vector2(r.width * .5f, Mathf.Lerp(.86f, .12f, t) * r.height);
+
+            const float turnStart = .56f;
+            float verticalX = .5f + routeCurveAmountValue * .55f;
+            Vector2 point;
+            if (t <= turnStart)
+            {
+                float straight = Mathf.InverseLerp(0f, turnStart, t);
+                point = new Vector2(verticalX, Mathf.Lerp(1.04f, .43f, straight));
+            }
+            else
+            {
+                float turn = Mathf.InverseLerp(turnStart, 1f, t);
+                float inverse = 1f - turn;
+                Vector2 start = new Vector2(verticalX, .43f);
+                Vector2 lowerControl = new Vector2(verticalX, .25f);
+                Vector2 upperControl = new Vector2(.50f, .08f);
+                Vector2 end = new Vector2(
+                    .50f - routeCurveAmountValue * 1.15f, -.04f);
+                point = inverse * inverse * inverse * start +
+                    3f * inverse * inverse * turn * lowerControl +
+                    3f * inverse * turn * turn * upperControl +
+                    turn * turn * turn * end;
+            }
+            return new Vector2(point.x * r.width, point.y * r.height);
+        }
+        float AmberRouteOpacity(float progress)
+        {
+            float fade = Mathf.SmoothStep(0f, 1f,
+                Mathf.InverseLerp(routeFadeStartValue, 1f, progress));
+            return Mathf.Lerp(1f, routeFarOpacityValue, fade);
+        }
+        void DrawAmberRoute(Painter2D p, Rect r, float width, float opacity)
+        {
+            const int segments = 36;
+            p.lineWidth = width;
+            for (int i = 0; i < segments; i++)
+            {
+                float from = i / (float)segments;
+                float to = (i + 1) / (float)segments;
+                float segmentOpacity = AmberRouteOpacity((from + to) * .5f);
+                p.strokeColor = new Color(1f, .66f, .18f, opacity * segmentOpacity);
+                p.BeginPath();
+                p.MoveTo(AmberRoutePoint(r, from));
+                p.LineTo(AmberRoutePoint(r, to));
+                p.Stroke();
+            }
         }
         void DrawRoad(MeshGenerationContext context)
         {
@@ -93,23 +160,38 @@ namespace RacingUI
             if (r.width <= 0 || r.height <= 0) return;
             var p = context.painter2D;
             if (amberRoute) {
-                float cx=r.width*(.5f-lateral*.4f);
-                for(int j=0;j<3;j++){
-                    p.lineWidth=j==0?8:j==1?4:2;
-                    p.strokeColor=new Color(1,.66f,.18f,j==0?.06f:j==1?.22f:1);
-                    p.BeginPath();p.MoveTo(new Vector2(cx,r.height*.82f));
-                    p.LineTo(new Vector2(cx,r.height*.08f));p.Stroke();
-                }
-                float markerTravel = raceProgress * progressOffset * r.height;
-                var markerBase = new Vector2(r.width*.5f,r.height*.8f);
-                var markerAt = markerBase - new Vector2(0f, markerTravel);
-                if (markerTravel > .5f) {
+                DrawAmberRoute(p, r, 9f, .06f);
+                DrawAmberRoute(p, r, 4.5f, .22f);
+                DrawAmberRoute(p, r, 2.6f, 1f);
+
+                const float routeVerticalSpan = .78f;
+                const float markerBaseProgress = .14f;
+                float markerProgress = Mathf.Clamp(
+                    markerBaseProgress + raceProgress * progressOffset / routeVerticalSpan,
+                    .14f, .82f);
+                var markerBase = AmberRoutePoint(r, markerBaseProgress);
+                var markerAt = AmberRoutePoint(r, markerProgress);
+                if (Vector2.Distance(markerBase, markerAt) > .5f) {
                     p.lineWidth = 3f;
                     p.strokeColor = new Color(1f,.55f,.13f,.75f);
-                    p.BeginPath(); p.MoveTo(markerBase); p.LineTo(markerAt); p.Stroke();
+                    const int trailSegments = 12;
+                    p.BeginPath();
+                    p.MoveTo(markerBase);
+                    for (int i = 1; i <= trailSegments; i++)
+                        p.LineTo(AmberRoutePoint(r, Mathf.Lerp(
+                            markerBaseProgress, markerProgress, i / (float)trailSegments)));
+                    p.Stroke();
                 }
                 float sz=referenceMarker?15:11;
-                var rot=Quaternion.Euler(0,0,-heading);
+                const float tangentSample = .012f;
+                Vector2 routeBefore = AmberRoutePoint(r,
+                    Mathf.Max(.001f, markerProgress - tangentSample));
+                Vector2 routeAfter = AmberRoutePoint(r,
+                    Mathf.Min(.999f, markerProgress + tangentSample));
+                Vector2 routeDirection = (routeAfter - routeBefore).normalized;
+                float routeAngle = Mathf.Atan2(routeDirection.y, routeDirection.x) *
+                    Mathf.Rad2Deg + 90f;
+                var rot=Quaternion.Euler(0,0,routeAngle);
                 Vector2 Offset(float x,float y)=>markerAt+(Vector2)(rot*new Vector3(x,y,0));
                 Quad(p,new Color(1,.5f,.1f,1),Offset(-sz,sz*.7f),Offset(0,-sz),Offset(sz,sz*.7f),Offset(0,sz*.25f));
                 if(referenceMarker){

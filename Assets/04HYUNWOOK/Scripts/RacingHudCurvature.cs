@@ -8,6 +8,8 @@ public sealed class RacingHudCurvature : MonoBehaviour
 {
     [Range(0f, .12f)] public float curvature = .095f;
     public Shader curvedShader;
+    [Tooltip("CarCinemachineSetup이 없는 시네마틱 1인칭 카메라에서도 곡률을 적용합니다.")]
+    public bool cinematicFirstPerson;
     UIDocument document;
     RacingHudController hudController;
     PanelSettings originalSettings, runtimeSettings;
@@ -21,22 +23,37 @@ public sealed class RacingHudCurvature : MonoBehaviour
     void LateUpdate()
     {
         bool visible = document != null && document.enabled && document.panelSettings != null;
-        if (image != null) image.enabled = visible;
         if (!visible) return;
-        if (runtimeSettings == null) Initialize();
-        if (runtimeSettings == null) return;
-        int w = Mathf.Max(64, Screen.width), h = Mathf.Max(64, Screen.height);
-        if (surface == null || w != width || h != height) Resize(w, h);
         // Apply visor curvature only to the active first-person document, including FPS 2.
         // The authored perimeter still owns its outside mask independently of this projection.
         bool authoredLayout = document.rootVisualElement.Q("racing-hud")?.ClassListContains("production-hud") == true;
         bool firstPerson = document.rootVisualElement.Q("racing-hud")?.ClassListContains("fps-document") == true;
         bool activeHud = hudController != null && hudController.isActiveAndEnabled;
         var camera = activeHud ? hudController.ViewCamera : null;
+        bool cinematicActive = cinematicFirstPerson && hudController != null
+            && hudController.IsHudVisible && hudController.IsFirstPersonHud;
+        bool vehicleCameraActive = hudController != null && hudController.StartupShieldClosed
+            && camera != null && camera.isActiveAndEnabled && hudController.IsFirstPerson
+            && hudController.EnableHelmetHudCurvature;
         bool applyCurvature = Application.isPlaying && firstPerson && activeHud
-            && hudController.StartupShieldClosed && camera != null && camera.isActiveAndEnabled
-            && camera.IsFirstPerson && camera.enableHelmetHudCurvature;
-        material.SetFloat("_Curvature", applyCurvature ? curvature : 0f);
+            && (cinematicActive || vehicleCameraActive);
+
+        if (!applyCurvature)
+        {
+            if (image != null) image.enabled = false;
+            if (runtimeSettings != null && document.panelSettings == runtimeSettings)
+                SwitchPanelSettings(originalSettings);
+            return;
+        }
+
+        if (runtimeSettings == null) Initialize();
+        else if (document.panelSettings != runtimeSettings)
+            SwitchPanelSettings(runtimeSettings);
+        if (runtimeSettings == null) return;
+        if (image != null) image.enabled = true;
+        int w = Mathf.Max(64, Screen.width), h = Mathf.Max(64, Screen.height);
+        if (surface == null || w != width || h != height) Resize(w, h);
+        material.SetFloat("_Curvature", curvature);
         material.SetFloat("_OutsideOpacity", !authoredLayout && activeHud && hudController.IsFirstPersonHud ? hudController.StartupOpacity : 0f);
         material.SetFloat("_ShieldCoverage", activeHud ? hudController.StartupShieldCoverage : 0f);
         material.SetFloat("_ShieldOpacity", activeHud ? hudController.StartupShieldOpacity : 0f);
@@ -58,6 +75,9 @@ public sealed class RacingHudCurvature : MonoBehaviour
         material = new Material(curvedShader) { hideFlags = HideFlags.HideAndDontSave };
         overlay = new GameObject("Racing HUD curved display", typeof(RectTransform), typeof(Canvas));
         overlay.hideFlags = HideFlags.HideAndDontSave;
+        // Keep the temporary display grouped with the vehicle HUD in the
+        // hierarchy. ScreenSpaceOverlay rendering is unchanged by this parent.
+        overlay.transform.SetParent(transform, false);
         var canvas = overlay.GetComponent<Canvas>();
         canvas.renderMode = RenderMode.ScreenSpaceOverlay;
         canvas.sortingOrder = Mathf.Clamp(Mathf.RoundToInt(originalSettings.sortingOrder), -32768, 32767);

@@ -7,19 +7,32 @@ using UnityEngine.Rendering.Universal;
 [ExecuteAlways, DisallowMultipleComponent]
 public sealed class RacingHelmetVignette : MonoBehaviour
 {
+    [Header("Cinematic first-person fallback")]
+    [SerializeField] RacingHudController hudOverride;
+    [SerializeField] bool cinematicFirstPerson;
+    [SerializeField] bool cinematicVignette = true;
+    [SerializeField] bool cinematicLensDistortion = true;
+    [Range(-1f,1f)] [SerializeField] float cinematicLensIntensity = .7f;
+    [Range(.01f,5f)] [SerializeField] float cinematicLensScale = .95f;
+    [Range(0f,1f)] [SerializeField] float cinematicVignetteIntensity = .5f;
+    [Range(.01f,1f)] [SerializeField] float cinematicVignetteSmoothness = .5f;
+
     CarCinemachineSetup settings;
     RacingHudController hud;
     Volume overlay;
     VolumeProfile profile;
     Vignette vignette;
     LensDistortion lens;
+    UniversalAdditionalCameraData renderCameraData;
+    bool previousPostProcessing;
+    bool capturedPostProcessing;
 
-    void OnEnable() { settings=GetComponent<CarCinemachineSetup>(); UpdateEffect(); }
+    void OnEnable() { settings=GetComponent<CarCinemachineSetup>(); hud=hudOverride; UpdateEffect(); }
     void Update() => UpdateEffect();
     void LateUpdate() => UpdateEffect();
     void UpdateEffect()
     {
-        if(!gameObject.scene.IsValid() || !gameObject.scene.isLoaded || !settings)return;
+        if(!gameObject.scene.IsValid() || !gameObject.scene.isLoaded || (!settings && !cinematicFirstPerson))return;
         if(!overlay)
         {
             var owner=new GameObject("RacingCamera Helmet Vignette (temporary)");
@@ -36,29 +49,59 @@ public sealed class RacingHelmetVignette : MonoBehaviour
             overlay.sharedProfile=profile;owner.SetActive(true);
         }
         overlay.gameObject.layer=gameObject.layer;
-        if(hud && hud.ViewCamera!=settings)hud=null;
+        if(settings && hud && hud.ViewCamera!=settings)hud=null;
         if(Application.isPlaying && (!hud || !hud.isActiveAndEnabled))
             foreach(var candidate in FindObjectsByType<RacingHudController>(FindObjectsSortMode.None))
                 if(candidate.isActiveAndEnabled && candidate.gameObject.scene==gameObject.scene
-                    && candidate.ViewCamera==settings){hud=candidate;break;}
-        bool worn=Application.isPlaying && settings.isActiveAndEnabled
-            && settings.IsFirstPerson && hud && hud.isActiveAndEnabled && hud.StartupShieldClosed;
-        bool show=worn && settings.enableHelmetVignette;
+                    && (!settings || candidate.ViewCamera==settings)){hud=candidate;break;}
+        bool worn=settings
+            ? Application.isPlaying && settings.isActiveAndEnabled
+                && settings.IsFirstPerson && hud && hud.isActiveAndEnabled && hud.StartupShieldClosed
+            : Application.isPlaying && cinematicFirstPerson && hud && hud.isActiveAndEnabled
+                && hud.IsHudVisible && hud.IsFirstPersonHud;
+        UpdateRenderCameraPostProcessing(worn);
+        bool vignetteEnabled=settings ? settings.enableHelmetVignette : cinematicVignette;
+        bool lensEnabled=settings ? settings.enableHelmetLensDistortion : cinematicLensDistortion;
+        float lensIntensity=settings ? settings.helmetLensDistortionIntensity : cinematicLensIntensity;
+        float lensScale=settings ? settings.helmetLensDistortionScale : cinematicLensScale;
+        float vignetteIntensity=settings ? settings.helmetVignetteIntensity : cinematicVignetteIntensity;
+        float vignetteSmoothness=settings ? settings.helmetVignetteSmoothness : cinematicVignetteSmoothness;
+        bool show=worn && vignetteEnabled;
         overlay.priority=worn?10001:10000;
-        bool distort=worn && settings.enableHelmetLensDistortion;
-        lens.intensity.Override(distort?settings.helmetLensDistortionIntensity:0);
-        lens.scale.Override(distort?settings.helmetLensDistortionScale:1);
-        vignette.intensity.Override(show?Mathf.Clamp01(settings.helmetVignetteIntensity)*hud.StartupOpacity:0);
-        vignette.smoothness.Override(Mathf.Clamp(settings.helmetVignetteSmoothness,.01f,1));
+        bool distort=worn && lensEnabled;
+        lens.intensity.Override(distort?lensIntensity:0);
+        lens.scale.Override(distort?lensScale:1);
+        vignette.intensity.Override(show?Mathf.Clamp01(vignetteIntensity)*hud.StartupOpacity:0);
+        vignette.smoothness.Override(Mathf.Clamp(vignetteSmoothness,.01f,1));
         vignette.color.Override(Color.black);
         vignette.center.Override(new Vector2(.5f,.5f));
         vignette.rounded.Override(false);
     }
+
+    void UpdateRenderCameraPostProcessing(bool enabledForHelmet)
+    {
+        if (!renderCameraData)
+        {
+            Camera renderCamera = Camera.main;
+            if (renderCamera) renderCameraData = renderCamera.GetComponent<UniversalAdditionalCameraData>();
+            if (renderCameraData && !capturedPostProcessing)
+            {
+                previousPostProcessing = renderCameraData.renderPostProcessing;
+                capturedPostProcessing = true;
+            }
+        }
+
+        if (renderCameraData)
+            renderCameraData.renderPostProcessing = enabledForHelmet;
+    }
+
     void OnDisable()
     {
+        if(renderCameraData && capturedPostProcessing)
+            renderCameraData.renderPostProcessing=previousPostProcessing;
         if(overlay){overlay.enabled=false;overlay.sharedProfile=null;Release(overlay.gameObject);}
         if(profile){foreach(var component in profile.components)Release(component);Release(profile);}
-        overlay=null;profile=null;vignette=null;lens=null;hud=null;
+        overlay=null;profile=null;vignette=null;lens=null;hud=null;renderCameraData=null;capturedPostProcessing=false;
     }
     static void Release(Object value)
     {

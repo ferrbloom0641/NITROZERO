@@ -1,0 +1,66 @@
+--- !u!114 &909247481
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 909247479}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4cb97509d25145f42a5723e45aa39ce4, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::RacingHudController
+  uiDocument: {fileID: 909247482}
+  tpsDocument: {fileID: 0}
+  fpsDocument: {fileID: 0}
+  cutsceneManager: {fileID: 0}
+  tpsCamera6: 5
+  tpsCamera7: 6
+  fpsCamera8: 7
+  showHudWithoutCutsceneManager: 0
+  startX: 0
+  finishX: 1000
+  tachometerMaximum: 300
+  speedDisplayScale: 1
+  speedRiseRate: 180
+  speedFallRate: 240
+  arrowForwardOffset: 0.075
+  showFirstPersonHudWithoutCutsceneManager: 0
+  showOnlyWhilePlaying: 1
+  restrictToOwningCamera: 0
+  owningCamera: 7
+  timerStartSeconds: 0
+  useTimedCinematicProgress: 0
+  playerStartProgressPercent: 34
+  playerFirstPercentDelay: 0.25
+  secondsPerProgressPercent: 2
+  rankProgressDelaySeconds: 1.5
+  useBlueTimedProgressLead: 0
+  blueTimedProgressLeadPercent: 1
+  greenSharesPlayerTimedProgress: 0
+  useRankBasedExtraTimedProgress: 0
+  useRankBasedStartingProgress: 0
+  leaderStartProgressPercent: 66
+  rankStartProgressStepPercent: 1
+  usePostBlueOvertakeRankProgress: 0
+  postBlueOvertakeLeaderPercent: 37
+  useFixedBlueTimedProgress: 0
+  fixedBlueTimedProgressPercent: 36
+  useDirectControllerSpeed: 0
+  speedReadoutRefreshInterval: 0
+  useStraightMinimapRoute: 0
+  enableFirstPersonHudVibration: 0
+  hudVibrationPixels: 0.65
+  instrumentHudVibrationPixels: 1.95
+  hudVibrationFrequency: 13
+  enableFrameLightReflection: 1
+  frameLightReflectionIntensity: 0.9
+  frameLightReflectionSpeed: 0.18
+  currentEngine: 98
+  useTimedBoostConsumption: 0
+  timedBoostStartSeconds: 1
+  timedBoostDurationSeconds: 2
+  timedBoostEndPercent: 33
+  currentCoolant: 90
+  currentFuel: 86
+  currentBoost: 48

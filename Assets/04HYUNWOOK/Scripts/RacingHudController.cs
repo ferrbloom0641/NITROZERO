@@ -3,6 +3,7 @@ using System.Linq;
 using UnityEngine;
 using UnityEngine.UIElements;
 
+[ExecuteAlways]
 public class RacingHudController : MonoBehaviour
 {
     [Header("UI Toolkit Document")]
@@ -43,6 +44,70 @@ public class RacingHudController : MonoBehaviour
     [Range(0.05f, 0.10f)]
     [SerializeField] private float arrowForwardOffset = 0.075f;
 
+    [SerializeField] private bool showFirstPersonHudWithoutCutsceneManager;
+    [SerializeField] private bool showOnlyWhilePlaying = true;
+    [SerializeField] private bool restrictToOwningCamera;
+    [SerializeField] private CutsceneCameraType owningCamera = CutsceneCameraType.Camera8;
+    [Header("타이머 / 진행률")]
+    [SerializeField] private float timerStartSeconds;
+    [SerializeField] private bool useTimedCinematicProgress;
+    [SerializeField] private float playerStartProgressPercent = 34f;
+    [SerializeField] private float playerFirstPercentDelay = .25f;
+    [SerializeField] private float secondsPerProgressPercent = 2f;
+    [SerializeField] private float rankProgressDelaySeconds = 1.5f;
+    [SerializeField] private bool useBlueTimedProgressLead;
+    [SerializeField] private float blueTimedProgressLeadPercent = 1f;
+    [SerializeField] private bool greenSharesPlayerTimedProgress;
+    [SerializeField] private bool useRankBasedExtraTimedProgress;
+    [SerializeField] private bool useRankBasedStartingProgress;
+    [SerializeField] private float leaderStartProgressPercent = 66f;
+    [SerializeField] private float rankStartProgressStepPercent = 1f;
+    [SerializeField] private bool usePostBlueOvertakeRankProgress;
+    [SerializeField] private float postBlueOvertakeLeaderPercent = 37f;
+    [SerializeField] private bool useFixedBlueTimedProgress;
+    [SerializeField] private float fixedBlueTimedProgressPercent = 36f;
+    [SerializeField] private bool useDirectControllerSpeed;
+    [Min(0f)] [SerializeField] private float speedReadoutRefreshInterval;
+    [SerializeField] private bool useStraightMinimapRoute;
+    [Header("1인칭 HUD 흔들림")]
+    [InspectorName("1인칭 HUD 흔들림 사용")]
+    [SerializeField] private bool enableFirstPersonHudVibration;
+    [InspectorName("일반 UI 흔들림 강도")]
+    [Range(0f,10f)] [SerializeField] private float hudVibrationPixels = .65f;
+    [InspectorName("하단 계기판 흔들림 강도")]
+    [Range(0f,10f)] [SerializeField] private float instrumentHudVibrationPixels = 1.95f;
+    [InspectorName("흔들림 속도")]
+    [Range(1f,30f)] [SerializeField] private float hudVibrationFrequency = 13f;
+    [Header("HUD 외곽선 빛 반사")]
+    [InspectorName("외곽선 빛 반사 사용")]
+    [SerializeField] private bool enableFrameLightReflection = true;
+    [InspectorName("빛 반사 밝기")]
+    [Range(0f,3f)] [SerializeField] private float frameLightReflectionIntensity = .9f;
+    [InspectorName("빛 반사 이동 속도")]
+    [Range(.02f,1.5f)] [SerializeField] private float frameLightReflectionSpeed = .18f;
+    [SerializeField] private float currentEngine = 98f;
+    [SerializeField] private bool useTimedBoostConsumption;
+    [SerializeField] private float timedBoostStartSeconds = 1f;
+    [SerializeField] private float timedBoostDurationSeconds = 2f;
+    [SerializeField] private float timedBoostEndPercent = 33f;
+    private float timedProgressElapsed, nextSpeedReadoutTime;
+    private bool runtimeInitialized, blueHasOvertakenPlayer;
+    private VehicleData blueRivalVehicle;
+    private VisualElement boundRoot, engineFill;
+    private RacingUI.DigitalReadout engineValueLabel;
+    private RacingUI.FpsAmberFrame helmetFrame;
+    private readonly List<VisualElement> vibrationPanels = new List<VisualElement>();
+    private readonly List<VisualElement> instrumentContents = new List<VisualElement>();
+    public float CurrentTimerSeconds => currentTimer;
+    public float CurrentEngineValue => currentEngine;
+    public float CurrentCoolantValue => currentCoolant;
+    public float CurrentFuelValue => currentFuel;
+    public float CurrentBoostValue { get; private set; }
+    public float PlayerProgressPercent { get; private set; }
+    public int PlayerRank { get; private set; } = 1;
+    public bool IsFirstPerson => IsFirstPersonHud;
+    public bool EnableHelmetHudCurvature => ViewCamera == null || ViewCamera.enableHelmetHudCurvature;
+
     #region External Script Compatibility (타 스크립트 참조 에러 방지용)
     private CarCinemachineSetup viewCamera;
     public CarCinemachineSetup ViewCamera
@@ -56,11 +121,12 @@ public class RacingHudController : MonoBehaviour
     }
     public bool StartupShieldClosed => false;
     public float StartupOpacity => 1f;
-    public bool IsFirstPersonHud => cutsceneManager != null && cutsceneManager.activeCamera == fpsCamera8;
+    public bool IsFirstPersonHud => cutsceneManager != null
+        ? (!restrictToOwningCamera || cutsceneManager.activeCamera == owningCamera) && cutsceneManager.activeCamera == fpsCamera8
+        : showFirstPersonHudWithoutCutsceneManager;
     public bool IsHudVisible => cutsceneManager != null
-        ? cutsceneManager.activeCamera == tpsCamera6 ||
-          cutsceneManager.activeCamera == tpsCamera7 ||
-          cutsceneManager.activeCamera == fpsCamera8
+        ? (restrictToOwningCamera ? cutsceneManager.activeCamera == owningCamera :
+            cutsceneManager.activeCamera == tpsCamera6 || cutsceneManager.activeCamera == tpsCamera7 || cutsceneManager.activeCamera == fpsCamera8)
         : showHudWithoutCutsceneManager;
     public float StartupShieldCoverage => 0f;
     public float StartupShieldOpacity => 0f;
@@ -118,6 +184,19 @@ public class RacingHudController : MonoBehaviour
 
     private void OnEnable()
     {
+        runtimeInitialized = false;
+        if (uiDocument == null) uiDocument = GetComponent<UIDocument>();
+        if (!Application.isPlaying) { SetHudVisibility(); return; }
+        InitializeRuntime();
+    }
+
+    private void InitializeRuntime()
+    {
+        currentTimer = timerStartSeconds;
+        timedProgressElapsed = 0f;
+        nextSpeedReadoutTime = 0f;
+        blueHasOvertakenPlayer = false;
+        CurrentBoostValue = currentBoost;
         displayedSpeedKmh = 0f;
         hasDisplayedSpeedSample = false;
         if (uiDocument == null) uiDocument = GetComponent<UIDocument>();
@@ -128,11 +207,34 @@ public class RacingHudController : MonoBehaviour
         ApplyCameraDocument();
         BindVisualTree();
         SetHudVisibility();
+        InitializeVehicles();
+        runtimeInitialized = true;
     }
 
     private void BindVisualTree()
     {
         VisualElement root = uiDocument.rootVisualElement;
+        if (root == null) return;
+        boundRoot = root;
+        engineValueLabel = root.Q<RacingUI.DigitalReadout>("engine-value");
+        engineFill = root.Q<VisualElement>("engine-fill");
+        helmetFrame = root.Q<RacingUI.FpsAmberFrame>("helmet-frame");
+        vibrationPanels.Clear();
+        foreach (string id in new[] { "ranking-panel", "minimap-panel", "temperature-panel", "fuel-panel" })
+        {
+            var element = root.Q<VisualElement>(id);
+            if (element != null) vibrationPanels.Add(element);
+        }
+        var timer = root.Q<VisualElement>("timer-panel");
+        if (timer != null) timer.transform.position = Vector3.zero;
+        instrumentContents.Clear();
+        var instrument = root.Q<VisualElement>("instrument-panel");
+        if (instrument != null)
+        {
+            instrument.transform.position = Vector3.zero;
+            foreach (var child in instrument.Children())
+                if (child.name != "instrument-panel-frame") instrumentContents.Add(child);
+        }
 
         // 계기판 기본 UI 캐싱
         speedValueLabel = root.Q<RacingUI.DigitalReadout>("speed-value");
@@ -142,6 +244,7 @@ public class RacingHudController : MonoBehaviour
 
         // 미니맵 UI 요소 캐싱
         navigationMap = root.Q<RacingUI.NavigationMap>("navigation-road");
+        if (navigationMap != null) navigationMap.straightRoute = useStraightMinimapRoute;
 
         // 냉각수 / 연료 UI
         coolantValueLabel = root.Q<RacingUI.DigitalReadout>("coolant-value");
@@ -201,6 +304,7 @@ public class RacingHudController : MonoBehaviour
 
             vehicles.Add(data);
             if (pair.Key == "Red_Car") playerVehicle = data;
+            if (pair.Key == "Blue_Car") blueRivalVehicle = data;
         }
     }
 
@@ -216,11 +320,18 @@ public class RacingHudController : MonoBehaviour
     {
         if (uiDocument?.rootVisualElement == null) return;
         uiDocument.rootVisualElement.style.display =
-            IsHudVisible ? DisplayStyle.Flex : DisplayStyle.None;
+            Application.isPlaying && IsHudVisible ? DisplayStyle.Flex : DisplayStyle.None;
     }
 
-    private static GameObject FindVehicleObject(string objectName)
+    private GameObject FindVehicleObject(string objectName)
     {
+        // Search the owning vehicle group first: Camera 7 and 8 contain duplicate names.
+        Transform group = transform.parent != null ? transform.parent.parent : null;
+        if (group != null)
+            foreach (Transform candidate in group.GetComponentsInChildren<Transform>(true))
+                if (candidate.name == objectName || (objectName == "Green_Car" &&
+                    candidate.name == "Green_Car_SmokeWork_CinematicFinal"))
+                    return candidate.gameObject;
         GameObject vehicle = GameObject.Find(objectName);
         if (vehicle == null && objectName == "Green_Car")
             vehicle = GameObject.Find("Green_Car_SmokeWork_CinematicFinal");
@@ -229,6 +340,8 @@ public class RacingHudController : MonoBehaviour
 
     private static float GetVehicleFrontX(VehicleData vehicle)
     {
+        if (vehicle.midRaceSpeedController != null && vehicle.midRaceSpeedController.ProvidesRoadRankingPosition)
+            return vehicle.midRaceSpeedController.RoadRankingPosition;
         if (vehicle.rankingCollider != null && vehicle.rankingCollider.enabled)
             return vehicle.rankingCollider.bounds.max.x;
         return vehicle.transform != null ? vehicle.transform.position.x : float.NegativeInfinity;
@@ -236,6 +349,11 @@ public class RacingHudController : MonoBehaviour
 
     private void Update()
     {
+        if (!Application.isPlaying) { SetHudVisibility(); return; }
+        if (!runtimeInitialized) InitializeRuntime();
+        if (uiDocument == null) return;
+        if (boundRoot != uiDocument.rootVisualElement ||
+            (speedValueLabel != null && speedValueLabel.panel == null)) BindVisualTree();
         VisualTreeAsset expectedDocument = IsFirstPersonHud ? fpsDocument : tpsDocument;
         if (expectedDocument != null && uiDocument != null && uiDocument.visualTreeAsset != expectedDocument)
         {
@@ -243,10 +361,13 @@ public class RacingHudController : MonoBehaviour
             BindVisualTree();
         }
         SetHudVisibility();
+        if (!IsHudVisible) return;
+        timedProgressElapsed += Time.deltaTime;
         UpdateTimer();
         UpdateProgressAndMinimap();
         UpdateInstrumentCluster();
         UpdateGauges();
+        UpdateHudEffects();
     }
 
     private void UpdateTimer()
@@ -271,7 +392,7 @@ public class RacingHudController : MonoBehaviour
                 // Use the forward face of the parent Box Collider. Child mesh
                 // pivots and per-part Mesh Colliders do not affect the ranking.
                 v.currentX = GetVehicleFrontX(v);
-                v.progressRatio = v.midRaceSpeedController != null &&
+                if (!useTimedCinematicProgress) v.progressRatio = v.midRaceSpeedController != null &&
                     v.midRaceSpeedController.ProvidesSequenceProgress
                     ? v.midRaceSpeedController.SequenceProgress
                     : Mathf.Clamp01((v.currentX - startX) / totalTrackLength);
@@ -282,12 +403,20 @@ public class RacingHudController : MonoBehaviour
             }
         }
 
+        if (blueRivalVehicle?.transform != null && playerVehicle?.transform != null &&
+            blueRivalVehicle.currentX > playerVehicle.currentX) blueHasOvertakenPlayer = true;
         // X축 위치 기준 순위 정렬
         var sortedRank = vehicles.OrderByDescending(v => v.currentX).ToList();
         for (int i = 0; i < 6; i++)
         {
             if (i < sortedRank.Count)
             {
+                if (useTimedCinematicProgress) sortedRank[i].progressRatio = EvaluateTimedProgress(sortedRank[i], i);
+                if (sortedRank[i] == playerVehicle)
+                {
+                    PlayerRank = i + 1;
+                    PlayerProgressPercent = sortedRank[i].progressRatio * 100f;
+                }
                 if (driverLabels[i] != null) driverLabels[i].text = sortedRank[i].driverId;
                 if (progressLabels[i] != null) progressLabels[i].text = $"{Mathf.RoundToInt(sortedRank[i].progressRatio * 100f)}%";
             }
@@ -314,14 +443,14 @@ public class RacingHudController : MonoBehaviour
         bool useMidRaceSpeed = playerVehicle.midRaceSpeedController != null &&
             playerVehicle.midRaceSpeedController.IsSequenceActive;
         float actualSpeedKmh = useMidRaceSpeed
-            ? playerVehicle.midRaceSpeedController.CurrentSpeedKmh
+            ? playerVehicle.midRaceSpeedController.DisplaySpeedKmh
             : playerVehicle.speedController != null
                 ? playerVehicle.speedController.CurrentSpeedKmh
                 : playerVehicle.measuredSpeedKmh;
         float targetDisplaySpeed = Mathf.Clamp(
             actualSpeedKmh * Mathf.Max(0f, speedDisplayScale),
             0f, Mathf.Max(1f, tachometerMaximum));
-        if (!hasDisplayedSpeedSample)
+        if (useDirectControllerSpeed || !hasDisplayedSpeedSample)
         {
             displayedSpeedKmh = targetDisplaySpeed;
             hasDisplayedSpeedSample = true;
@@ -334,8 +463,11 @@ public class RacingHudController : MonoBehaviour
         }
         float speedKmH = displayedSpeedKmh;
 
-        if (speedValueLabel != null)
+        if (speedValueLabel != null && (speedReadoutRefreshInterval <= 0f || Time.unscaledTime >= nextSpeedReadoutTime))
+        {
             speedValueLabel.text = $"{Mathf.RoundToInt(speedKmH):D3}";
+            nextSpeedReadoutTime = Time.unscaledTime + speedReadoutRefreshInterval;
+        }
 
         // 50km/h 단위 변속 (1~6단)
         int gear = useMidRaceSpeed
@@ -352,17 +484,18 @@ public class RacingHudController : MonoBehaviour
         float gearGaugeRatio = speedInCurrentGear / 50f;
         int fillBarCount = Mathf.RoundToInt(gearGaugeRatio * 40f);
 
-        bool isRedline = speedInCurrentGear >= 40f;
-        Color barColor = isRedline ? new Color(1f, 0.2f, 0.1f) : new Color(1f, 0.61f, 0.21f);
+
 
         for (int i = 0; i < 40; i++)
         {
             if (rpmBars[i] != null)
             {
+                rpmBars[i].style.backgroundColor = i >= 30
+                    ? (Color)new Color32(207,87,14,255) : (Color)new Color32(255,155,53,255);
                 if (i < fillBarCount)
                 {
                     rpmBars[i].style.opacity = 1.0f;
-                    rpmBars[i].style.backgroundColor = barColor;
+
                 }
                 else
                 {
@@ -374,13 +507,78 @@ public class RacingHudController : MonoBehaviour
 
     private void UpdateGauges()
     {
+        if (engineValueLabel != null) engineValueLabel.text = $"{Mathf.RoundToInt(currentEngine)}";
+        if (engineFill != null) engineFill.style.width = Length.Percent(Mathf.Clamp(currentEngine,0f,100f));
+        CurrentBoostValue = useTimedBoostConsumption
+            ? Mathf.Lerp(currentBoost, timedBoostEndPercent, Mathf.InverseLerp(timedBoostStartSeconds,
+                timedBoostStartSeconds + Mathf.Max(.01f,timedBoostDurationSeconds), timedProgressElapsed))
+            : currentBoost;
         if (coolantValueLabel != null) coolantValueLabel.text = $"{Mathf.RoundToInt(currentCoolant)}";
         if (coolantFill != null) coolantFill.style.width = Length.Percent(Mathf.Clamp01(currentCoolant / 120f) * 100f);
 
         if (fuelPercentLabel != null) fuelPercentLabel.text = $"{Mathf.RoundToInt(currentFuel)}";
         if (fuelFill != null) fuelFill.style.width = Length.Percent(Mathf.Clamp01(currentFuel / 100f) * 100f);
 
-        if (boostValueLabel != null) boostValueLabel.text = $"{Mathf.RoundToInt(currentBoost)}";
-        if (boostFill != null) boostFill.style.width = Length.Percent(Mathf.Clamp01(currentBoost / 100f) * 100f);
+        if (boostValueLabel != null) boostValueLabel.text = $"{Mathf.RoundToInt(CurrentBoostValue)}";
+        if (boostFill != null) boostFill.style.width = Length.Percent(Mathf.Clamp01(CurrentBoostValue / 100f) * 100f);
+    }
+
+    private float GainedPercent(float delay)
+    {
+        float start = Mathf.Max(0f, playerFirstPercentDelay) + Mathf.Max(0f,delay);
+        return timedProgressElapsed < start ? 0f : 1f + Mathf.Floor((timedProgressElapsed-start) / Mathf.Max(.01f,secondsPerProgressPercent));
+    }
+    private float EvaluateTimedProgress(VehicleData vehicle, int rank)
+    {
+        float value;
+        float player = playerStartProgressPercent + GainedPercent(0f);
+        if (useRankBasedStartingProgress)
+            value = leaderStartProgressPercent - rank * rankStartProgressStepPercent + GainedPercent(0f);
+        else if (useFixedBlueTimedProgress && vehicle == blueRivalVehicle)
+            value = fixedBlueTimedProgressPercent;
+        else if (usePostBlueOvertakeRankProgress && blueHasOvertakenPlayer)
+            value = postBlueOvertakeLeaderPercent - (vehicle == blueRivalVehicle ? 0 : vehicle == playerVehicle ? 1 : rank);
+        else if (vehicle == playerVehicle || (greenSharesPlayerTimedProgress && vehicle.objectName == "Green_Car"))
+            value = player;
+        else if (useBlueTimedProgressLead && vehicle == blueRivalVehicle)
+            value = player + blueTimedProgressLeadPercent;
+        else if (useRankBasedExtraTimedProgress && rank >= 3)
+            value = player - (rank - 3);
+        else
+            value = playerStartProgressPercent + GainedPercent(vehicle == blueRivalVehicle && blueHasOvertakenPlayer
+                ? 0f : Mathf.Max(1,rank)*Mathf.Max(0f,rankProgressDelaySeconds));
+        return Mathf.Clamp01(value/100f);
+    }
+    private void UpdateHudEffects()
+    {
+        bool shake = enableFirstPersonHudVibration && IsFirstPersonHud;
+        float time = Time.unscaledTime * Mathf.Max(1f,hudVibrationFrequency);
+        Vector3 Offset(float phase, float strength) => shake ? new Vector3(
+            (Mathf.PerlinNoise(time,phase)-.5f)*2f*strength,
+            (Mathf.PerlinNoise(phase,time*1.07f)-.5f)*2f*strength,0f) : Vector3.zero;
+        for (int i=0;i<vibrationPanels.Count;i++)
+            vibrationPanels[i].transform.position = Offset(i*11.73f,hudVibrationPixels);
+        Vector3 instrumentOffset = Offset(91.37f,instrumentHudVibrationPixels);
+        foreach (var element in instrumentContents) element.transform.position = instrumentOffset;
+        if (helmetFrame != null)
+        {
+            helmetFrame.lightReflection = enableFrameLightReflection && IsFirstPersonHud;
+            helmetFrame.lightReflectionIntensity = frameLightReflectionIntensity;
+            helmetFrame.lightReflectionSpeed = frameLightReflectionSpeed;
+        }
+    }
+    public void SetGaugeValues(float engine, float coolant, float fuel, float boost)
+    {
+        currentEngine = Mathf.Clamp(engine,0f,100f);
+        currentCoolant = coolant;
+        currentFuel = Mathf.Clamp(fuel,0f,100f);
+        currentBoost = Mathf.Clamp(boost,0f,100f);
+        UpdateGauges();
+    }
+    public void SetBoost(float value, bool stopTimedConsumption = true)
+    {
+        currentBoost = Mathf.Clamp(value,0f,100f);
+        if (stopTimedConsumption) useTimedBoostConsumption = false;
+        UpdateGauges();
     }
 }

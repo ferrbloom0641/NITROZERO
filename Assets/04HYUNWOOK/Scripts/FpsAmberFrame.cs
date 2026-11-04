@@ -6,7 +6,55 @@ namespace RacingUI
     [UxmlElement]
     public partial class FpsAmberFrame : VisualElement
     {
-        public FpsAmberFrame() { pickingMode = PickingMode.Ignore; generateVisualContent += Draw; }
+        bool lightReflectionValue = true;
+        float lightReflectionSpeedValue = .18f;
+        float lightReflectionIntensityValue = .9f;
+        float lightReflectionStartTime;
+        bool lightReflectionWasPlaying;
+
+        [UxmlAttribute]
+        public bool lightReflection
+        {
+            get => lightReflectionValue;
+            set { if (lightReflectionValue == value) return; lightReflectionValue = value; MarkDirtyRepaint(); }
+        }
+        [UxmlAttribute]
+        public float lightReflectionSpeed
+        {
+            get => lightReflectionSpeedValue;
+            set
+            {
+                float clamped = Mathf.Clamp(value, .02f, 1.5f);
+                if (Mathf.Approximately(lightReflectionSpeedValue, clamped)) return;
+                lightReflectionSpeedValue = clamped;
+                MarkDirtyRepaint();
+            }
+        }
+        [UxmlAttribute]
+        public float lightReflectionIntensity
+        {
+            get => lightReflectionIntensityValue;
+            set
+            {
+                float clamped = Mathf.Clamp(value, 0f, 3f);
+                if (Mathf.Approximately(lightReflectionIntensityValue, clamped)) return;
+                lightReflectionIntensityValue = clamped;
+                MarkDirtyRepaint();
+            }
+        }
+
+        public FpsAmberFrame()
+        {
+            pickingMode = PickingMode.Ignore;
+            generateVisualContent += Draw;
+            RegisterCallback<AttachToPanelEvent>(_ =>
+                lightReflectionStartTime = Time.unscaledTime);
+            schedule.Execute(() =>
+            {
+                if (Application.isPlaying && lightReflectionValue)
+                    MarkDirtyRepaint();
+            }).Every(16);
+        }
         void Draw(MeshGenerationContext ctx)
         {
             if (contentRect.width <= 0 || contentRect.height <= 0) return;
@@ -14,12 +62,35 @@ namespace RacingUI
             p.lineJoin = LineJoin.Round;
             p.lineCap = LineCap.Butt;
             float scale = Mathf.Min(contentRect.width / 1672f, contentRect.height / 941f);
+            if (Application.isPlaying && !lightReflectionWasPlaying)
+            {
+                lightReflectionStartTime = Time.unscaledTime;
+                lightReflectionWasPlaying = true;
+            }
+            else if (!Application.isPlaying)
+            {
+                lightReflectionWasPlaying = false;
+            }
             Vector2 V(float x, float y) => new Vector2(x * contentRect.width / 1672f, y * contentRect.height / 941f);
             void Stroke(Vector2[] points, float width, Color color)
             {
                 p.BeginPath(); p.MoveTo(points[0]);
                 for (int i = 1; i < points.Length; i++) p.LineTo(points[i]);
                 p.lineWidth = width * scale; p.strokeColor = color; p.Stroke();
+            }
+            float reflectionSweep = Application.isPlaying && lightReflectionValue
+                ? Mathf.Repeat((Time.unscaledTime - lightReflectionStartTime) *
+                    lightReflectionSpeedValue, 1f)
+                : -1f;
+            float FrameTileReflection(float tileProgress)
+            {
+                if (reflectionSweep < 0f || lightReflectionIntensityValue <= 0f) return 0f;
+
+                // Progress is assigned from the actual thick tile order. Empty thin
+                // rail sections therefore no longer consume most of the animation.
+                float distance = Mathf.Abs(reflectionSweep - Mathf.Clamp01(tileProgress));
+                float strength = 1f - Mathf.Clamp01(distance / .11f);
+                return strength * strength * lightReflectionIntensityValue;
             }
             // Dense smooth samples keep the long visor edges curved at every resolution.
             // Same endpoint as instrument-panel: (338,706) + (8%,14%) of (997,210).
@@ -37,6 +108,9 @@ namespace RacingUI
             // The authored 997px instrument is centered at 836.5, not 836.
             right[0]=V(1255.24f,735.4f);
             foreach(var line in new[]{left.ToArray(),right}) {
+                // A subtle full-length rail closes the small gaps between the
+                // visor curve, lower tiles and instrument shoulder.
+                Stroke(line,.8f,new Color(1,.55f,.13f,.55f));
                 // The lower tiles own the bright rim. A bright continuous line beneath
                 // them used to bridge every gap and produce a heavy double border.
                 var upper = new Vector2[line.Length - 4];
@@ -68,7 +142,8 @@ namespace RacingUI
             }
             Stroke(new[]{V(91,28),V(429,46),V(451,39),V(1221,39),V(1243,46),V(1581,28)},.7f,new Color(1,.51f,.12f,.25f));
             void Lit(float ax,float ay,float bx,float by,int count, bool mirror,
-                bool lower = false, float[] divisions = null, bool marker = false) {
+                bool lower = false, float[] divisions = null, bool marker = false,
+                float reflectionStart = .82f, float reflectionEnd = .98f) {
                 // Build in design space, then mirror the entire polygon (including its
                 // slanted ends). Reversing only a stroke made left/right cuts disagree.
                 Vector2 Map(Vector2 point) => V(mirror ? 1672f-point.x : point.x, point.y);
@@ -80,6 +155,8 @@ namespace RacingUI
                     var a=new Vector2(Mathf.Lerp(ax,bx,from),Mathf.Lerp(ay,by,from));
                     var b=new Vector2(Mathf.Lerp(ax,bx,to),Mathf.Lerp(ay,by,to));
                     float light = lower && count > 2 ? (i==0 ? .85f : Mathf.Lerp(.42f,1f,(i-1f)/(count-2f))) : 1f;
+                    float reflection = FrameTileReflection(Mathf.Lerp(
+                        reflectionStart, reflectionEnd, (i + .5f) / count));
                     // Angled ends match the original visor's luminous tiles.
                     Vector2 d=(b-a).normalized, n=new Vector2(-d.y,d.x);
                     float half = marker ? 2.4f : lower ? 3.6f : 3.4f;
@@ -91,22 +168,44 @@ namespace RacingUI
                         p.fillColor=color;p.Fill();
                     }
                     if(!marker) {
-                        Tile(half+6,4,new Color(1,.43f,.03f,.025f*light));
-                        Tile(half+3,2,new Color(1,.48f,.04f,.065f*light));
+                        Tile(half+7,5,new Color(1,.52f,.10f,(.025f+.10f*reflection)*light));
+                        Tile(half+3,2,new Color(1,.60f,.12f,(.065f+.20f*reflection)*light));
                     }
                     p.BeginPath();p.MoveTo(Map(a-n*half+d*2));p.LineTo(Map(b-n*half+d*2));
                     p.LineTo(Map(b+n*half-d*2));p.LineTo(Map(a+n*half-d*2));p.ClosePath();
-                    p.fillColor=new Color(1,.59f,.15f,.97f*light);p.Fill();
+                    Color baseColor = new Color(1,.59f,.15f,.97f*light);
+                    p.fillColor=Color.Lerp(baseColor,new Color(1f,.96f,.72f,1f),
+                        Mathf.Clamp01(reflection));p.Fill();
                 }
             }
             void LowerTiles(bool mirror) {
                 // These are individual flat luminous plates, not equal subdivisions
                 // of a stroked rail. Corner plates turn with the frame as one piece.
+                int plateIndex=0;
+                const int plateCount=11;
                 void Plate(float brightness, params Vector2[] points) {
                     Vector2 Map(Vector2 a)=>V(mirror?1672f-a.x:a.x,a.y);
-                    p.BeginPath();p.MoveTo(Map(points[0]));
-                    for(int i=1;i<points.Length;i++)p.LineTo(Map(points[i]));
-                    p.ClosePath();p.fillColor=new Color(1,.57f,.12f,brightness);p.Fill();
+                    Vector2 center=Vector2.zero;
+                    for(int i=0;i<points.Length;i++)center+=points[i];
+                    center/=points.Length;
+                    float reflection=FrameTileReflection(Mathf.Lerp(.02f,.72f,
+                        plateIndex/(float)(plateCount-1)));
+                    plateIndex++;
+                    void FillPlate(float expansion,Color color) {
+                        p.BeginPath();
+                        for(int i=0;i<points.Length;i++) {
+                            Vector2 expanded=center+(points[i]-center)*expansion;
+                            if(i==0)p.MoveTo(Map(expanded));else p.LineTo(Map(expanded));
+                        }
+                        p.ClosePath();p.fillColor=color;p.Fill();
+                    }
+                    FillPlate(1f,new Color(1,.57f,.12f,brightness));
+                    if(reflection>0f) {
+                        FillPlate(1.42f,new Color(1f,.55f,.12f,
+                            .13f*Mathf.Clamp01(reflection)));
+                        FillPlate(1f,new Color(1f,.97f,.76f,
+                            .88f*Mathf.Clamp01(reflection)));
+                    }
                 }
                 Plate(.97f,new Vector2(72,757),new Vector2(79,754),new Vector2(88,770),new Vector2(81,774));
                 Plate(.97f,new Vector2(83,777),new Vector2(90,773),new Vector2(99,789),new Vector2(92,793));
@@ -132,9 +231,12 @@ namespace RacingUI
                 Stroke(new[]{Side(97,795),Side(113,822)},1.8f,new Color(1,.57f,.13f,.85f));
             }
             // Thin mirrored shoulder ticks sit just above the instrument rail.
-            Lit(496,728,540,728,4,false,marker:true);
-            Lit(496,728,540,728,4,true,marker:true);
+            Lit(496,728,540,728,4,false,marker:true,
+                reflectionStart:.74f,reflectionEnd:.82f);
+            Lit(496,728,540,728,4,true,marker:true,
+                reflectionStart:.74f,reflectionEnd:.82f);
             // The instrument owns the shoulder rails; do not draw a second floating outline here.
+
         }
     }
 }

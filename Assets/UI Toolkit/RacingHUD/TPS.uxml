@@ -38,7 +38,7 @@
         </ui:VisualElement>
         <ui:VisualElement name="minimap-panel" class="map-artwork" style="position: absolute; left: 1322px; top: 42px; width: 282px; height: 205px;">
             <racing:AmberMapFrame glass-opacity=".50" glass-color="#000000" style="position: absolute; left: 0; top: 0; width: 282px; height: 205px;"/>
-            <racing:NavigationMap name="navigation-road" amber-route="true" reference-marker="true" style="position: absolute; left: 11px; top: 10px; width: 262px; height: 158px;"/>
+            <racing:NavigationMap name="navigation-road" amber-route="true" reference-marker="true" route-curve-amount="0.15" route-fade-start="0.84" route-far-opacity="0.42" style="position: absolute; left: 1px; top: 1px; width: 280px; height: 175px; overflow: hidden;"/>
             <ui:Label name="route-distance" text="DISTANCE LEFT" class="" style="position: absolute; left: 12px; top: 173px; width: 258px; height: 23px; font-size: 14px; -unity-text-align: middle-center;"/>
         </ui:VisualElement>
         <ui:VisualElement name="timer-panel" style="position: absolute; left: 690px; top: 30px; width: 290px; height: 66px;">
@@ -81,8 +81,8 @@
             <ui:VisualElement name="rpm-bar-27" style="position: absolute; left: 494px; top: 134px; width: 14px; height: 22px; background-color: rgb(255, 155, 53); opacity: 0.12;"/>
             <ui:VisualElement name="rpm-bar-28" style="position: absolute; left: 510px; top: 134px; width: 14px; height: 22px; background-color: rgb(255, 155, 53); opacity: 0.12;"/>
             <ui:VisualElement name="rpm-bar-29" style="position: absolute; left: 526px; top: 134px; width: 14px; height: 22px; background-color: rgb(255, 155, 53); opacity: 0.12;"/>
-            <ui:VisualElement name="rpm-bar-30" style="position: absolute; left: 542px; top: 134px; width: 14px; height: 22px; background-color: rgb(255, 155, 53); opacity: 0.12;"/>
-            <ui:VisualElement name="rpm-bar-31" style="position: absolute; left: 558px; top: 134px; width: 14px; height: 22px; background-color: rgb(255, 155, 53); opacity: 0.12;"/>
+            <ui:VisualElement name="rpm-bar-30" style="position: absolute; left: 542px; top: 134px; width: 14px; height: 22px; background-color: rgb(207, 87, 14); opacity: 0.12;"/>
+            <ui:VisualElement name="rpm-bar-31" style="position: absolute; left: 558px; top: 134px; width: 14px; height: 22px; background-color: rgb(207, 87, 14); opacity: 0.12;"/>
             <ui:VisualElement name="rpm-bar-32" style="position: absolute; left: 574px; top: 134px; width: 14px; height: 22px; background-color: rgb(207, 87, 14); opacity: 0.12;"/>
             <ui:VisualElement name="rpm-bar-33" style="position: absolute; left: 590px; top: 134px; width: 14px; height: 22px; background-color: rgb(207, 87, 14); opacity: 0.12;"/>
             <ui:VisualElement name="rpm-bar-34" style="position: absolute; left: 606px; top: 134px; width: 14px; height: 22px; background-color: rgb(207, 87, 14); opacity: 0.12;"/>
