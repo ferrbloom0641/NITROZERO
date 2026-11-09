@@ -5,6 +5,12 @@ using UnityEngine;
 [DisallowMultipleComponent]
 public sealed class MidRaceSpeedController : MonoBehaviour
 {
+    // Shared normalized timing keeps TPS movement, instruments and ranking aligned.
+    // Camera 7's blue approach ends at 0.8s; downshift follows 0.2s later in the 2.5s shot.
+    public const float ThirdPersonDownshiftProgress = .4f;
+    public const float ThirdPersonAccelerationProgress = .72f;
+    public const float ThirdPersonCruiseProgress = .9f;
+
     static readonly List<MidRaceSpeedController> ActiveVehicles =
         new List<MidRaceSpeedController>();
 
@@ -91,11 +97,17 @@ public sealed class MidRaceSpeedController : MonoBehaviour
     [Min(0.01f)][SerializeField] private float longitudinalOffsetDurationSeconds = 0.6f;
     [Tooltip("음수는 진행 방향의 뒤쪽, 양수는 앞쪽입니다.")]
     [SerializeField] private float longitudinalOffsetDistance;
-    [Tooltip("현재 시작 좌표에서 대상 차량 뒤의 지정 간격까지 필요한 이동량을 자동 계산합니다.")]
+    [Tooltip("시작 위치에서 대상 차량 중심까지 필요한 이동량을 자동 계산합니다. 간격 0이면 나란히 맞춥니다.")]
     [SerializeField] private bool calculateLongitudinalOffsetFromTarget;
     [SerializeField] private MidRaceSpeedController longitudinalOffsetTarget;
     [Min(0f)][SerializeField] private float longitudinalTargetGap = 4.5f;
     [Min(0f)][SerializeField] private float maximumAutomaticLongitudinalOffset = 30f;
+
+    [Header("3인칭 HUD 감속 연동")]
+    [InspectorName("감속 시 뒤로 물렸다가 복귀")]
+    [SerializeField] private bool useHudSpeedRetreat;
+    [InspectorName("감속 시 뒤로 물러나는 거리")]
+    [Min(0f)][SerializeField] private float hudSpeedRetreatDistance = 2f;
 
     [Header("Straight-line pressure")]
     [Tooltip("직선 주행 중 대상 차량을 기준으로 지정한 종방향 위치를 유지합니다.")]
@@ -192,6 +204,15 @@ public sealed class MidRaceSpeedController : MonoBehaviour
         ? Mathf.Clamp01(sequenceElapsed / sequenceDurationSeconds)
         : 0f;
     public bool ProvidesSequenceProgress => sequenceDurationSeconds > 0f && IsSequenceActive;
+    public bool UsesHudSpeedRetreat => useHudSpeedRetreat && ProvidesSequenceProgress &&
+        (cutsceneManager == null || cutsceneManager.activeCamera == CutsceneCameraType.Camera7);
+    public float HudSpeedRetreatRatio => UsesHudSpeedRetreat ? EvaluateHudSpeedRetreatRatio(SequenceProgress) : 0f;
+    public bool IsHudSpeedRetreatInProgress => UsesHudSpeedRetreat &&
+        SequenceProgress > ThirdPersonDownshiftProgress && SequenceProgress < ThirdPersonCruiseProgress;
+    public float HudLaneOffset => !sequenceStarted || !IsSequenceActive || !enableSingleLaneMove ? 0f
+        : followRoadPointPath && pathReady ? currentPathLateralOffset - lateralOffset
+        : transform.position.z - straightBaseWorldZ;
+    public float HudLaneYaw => sequenceStarted && IsSequenceActive && enableSingleLaneMove ? straightYawOffset : 0f;
     public bool ProvidesRoadRankingPosition => followRoadPointPath && pathReady;
     public float RoadRankingPosition => reverseRoadPointOrder
         ? pathLength - pathDistance
@@ -227,6 +248,7 @@ public sealed class MidRaceSpeedController : MonoBehaviour
     float straightYawVelocity;
     float appliedLongitudinalOffset;
     float resolvedLongitudinalOffsetDistance;
+    Vector3 sequenceStartCenter;
     float laneSeparationSide;
     bool accelerationTransformationInitialized;
     float currentPathLateralOffset;
@@ -242,6 +264,10 @@ public sealed class MidRaceSpeedController : MonoBehaviour
         overtakeImpactTriggered = false;
         sequenceStarted = false;
         sequenceActivationElapsed = 0f;
+        // Capture before any vehicle Update: relative placement must not depend on
+        // which car moves first on the initial frame.
+        sequenceStartCenter = vehicleCollisionBox != null
+            ? transform.TransformPoint(vehicleCollisionBox.center) : transform.position;
     }
 
     void OnDisable()
@@ -321,6 +347,13 @@ public sealed class MidRaceSpeedController : MonoBehaviour
         float distanceThisFrame = CurrentSpeedKmh / 3.6f * activeDeltaTime;
         float longitudinalOffsetDelta =
             EvaluateTimedLongitudinalOffsetDelta(sequenceElapsed + activeDeltaTime);
+        if (UsesHudSpeedRetreat)
+        {
+            // Add only the change in offset to normal travel; the full cycle sums to zero.
+            // The road-path sampler handles both the road angle and reverse travel.
+            float nextRatio = EvaluateHudSpeedRetreatRatio(nextElapsed / sequenceDurationSeconds);
+            longitudinalOffsetDelta -= hudSpeedRetreatDistance * (nextRatio - HudSpeedRetreatRatio);
+        }
         if (followRoadPointPath && pathReady)
             FollowRoadPath(distanceThisFrame + longitudinalOffsetDelta,
                 sequenceElapsed + activeDeltaTime);
@@ -718,6 +751,21 @@ public sealed class MidRaceSpeedController : MonoBehaviour
         }
     }
 
+    static float EvaluateHudSpeedRetreatRatio(float progress)
+    {
+        if (progress < ThirdPersonAccelerationProgress)
+        {
+            float retreat = Mathf.InverseLerp(
+                ThirdPersonDownshiftProgress, ThirdPersonAccelerationProgress, progress);
+            // Respond immediately to the downshift, then ease to the full setback.
+            // SmoothStep's zero initial slope made this look delayed after gear 5 appeared.
+            return retreat * (2f - retreat);
+        }
+
+        return 1f - Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(
+            ThirdPersonAccelerationProgress, ThirdPersonCruiseProgress, progress));
+    }
+
     float EvaluateTimedLongitudinalOffsetDelta(float elapsed)
     {
         if (!useTimedLongitudinalOffset) return 0f;
@@ -746,6 +794,15 @@ public sealed class MidRaceSpeedController : MonoBehaviour
         float currentGap = Vector3.Dot(
             longitudinalOffsetTarget.transform.position - transform.position,
             worldDirection);
+        if (followRoadPointPath && pathReady &&
+            sequenceStartDelaySeconds <= 0f && longitudinalOffsetTarget.sequenceStartDelaySeconds <= 0f)
+        {
+            // Project both authored centres onto the same road. This includes the
+            // road's slight X/Z angle instead of measuring the world X gap only.
+            float ownDistance = FindNearestPathDistance(sequenceStartCenter, out _, out _);
+            float targetDistance = FindNearestPathDistance(longitudinalOffsetTarget.sequenceStartCenter, out _, out _);
+            currentGap = (targetDistance - ownDistance) * (reverseRoadPointOrder ? -1f : 1f);
+        }
         resolvedLongitudinalOffsetDistance = Mathf.Clamp(
             currentGap - longitudinalTargetGap,
             0f,

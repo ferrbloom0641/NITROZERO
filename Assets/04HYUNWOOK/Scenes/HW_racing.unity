@@ -5953,7 +5953,7 @@ MonoBehaviour:
   uiDocument: {fileID: 44466611}
   tpsDocument: {fileID: 9197481963319205126, guid: 9dc2c7c0fe7a49d8bbb77d9a479f788d, type: 3}
   fpsDocument: {fileID: 9197481963319205126, guid: 826e18e428304dd281799dce2a199048, type: 3}
-  cutsceneManager: {fileID: 0}
+  cutsceneManager: {fileID: 217356168}
   tpsCamera6: 5
   tpsCamera7: 6
   fpsCamera8: 7
@@ -5969,7 +5969,7 @@ MonoBehaviour:
   showOnlyWhilePlaying: 1
   restrictToOwningCamera: 1
   owningCamera: 7
-  timerStartSeconds: 76
+  timerStartSeconds: 76.632
   useTimedCinematicProgress: 1
   playerStartProgressPercent: 66
   playerFirstPercentDelay: 0.25
@@ -5980,14 +5980,14 @@ MonoBehaviour:
   greenSharesPlayerTimedProgress: 0
   useRankBasedExtraTimedProgress: 0
   useRankBasedStartingProgress: 1
-  leaderStartProgressPercent: 66
+  leaderStartProgressPercent: 67
   rankStartProgressStepPercent: 1
   usePostBlueOvertakeRankProgress: 1
   postBlueOvertakeLeaderPercent: 36
   useFixedBlueTimedProgress: 1
   fixedBlueTimedProgressPercent: 36
   useDirectControllerSpeed: 1
-  speedReadoutRefreshInterval: 0.08
+  speedReadoutRefreshInterval: 0
   useStraightMinimapRoute: 1
   enableFirstPersonHudVibration: 1
   hudVibrationPixels: 0
@@ -5995,7 +5995,9 @@ MonoBehaviour:
   hudVibrationFrequency: 1
   enableFrameLightReflection: 1
   frameLightReflectionIntensity: 3
-  frameLightReflectionSpeed: 0.1
+  frameLightReflectionSpeed: 1.5
+  useTwoSecondHudSequence: 1
+  cinematicHudDurationSeconds: 2.5
   currentEngine: 98
   useTimedBoostConsumption: 0
   timedBoostStartSeconds: 2
@@ -6003,7 +6005,7 @@ MonoBehaviour:
   timedBoostEndPercent: 33
   currentCoolant: 95
   currentFuel: 74
-  currentBoost: 66
+  currentBoost: 87
 --- !u!114 &44466611
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -23056,6 +23058,7 @@ GameObject:
   m_Component:
   - component: {fileID: 173174923}
   - component: {fileID: 173174924}
+  - component: {fileID: 9100000000000000501}
   - component: {fileID: 9100000000000000020}
   m_Layer: 0
   m_Name: CinemachineCamera
@@ -24047,7 +24050,7 @@ MonoBehaviour:
   burstFovRiseSeconds: 1
   burstFovFallSeconds: 1
   sequenceStartDelaySeconds: 0
-  sequenceDurationSeconds: 5
+  sequenceDurationSeconds: 2.5
   stopAtSequenceEnd: 1
   stopApplicationAtSequenceEnd: 0
   moveAxis: 1
@@ -24079,6 +24082,8 @@ MonoBehaviour:
   longitudinalOffsetTarget: {fileID: 0}
   longitudinalTargetGap: 4.5
   maximumAutomaticLongitudinalOffset: 30
+  useHudSpeedRetreat: 0
+  hudSpeedRetreatDistance: 2
   pressureTarget: {fileID: 0}
   pressureFollowingDistance: 5
   pressureForwardOffset: 0
@@ -26525,7 +26530,7 @@ MonoBehaviour:
   activeCamera: 6
   autoStopOnFinish: 1
   playableDirector: {fileID: 0}
-  fallbackDuration: 5
+  fallbackDuration: 2.5
   usePerCameraDurations: 1
   camera1Duration: 5
   camera2Duration: 4.5
@@ -26533,8 +26538,8 @@ MonoBehaviour:
   camera4Duration: 5
   camera5Duration: 4
   camera6Duration: 4
-  camera7Duration: 5
-  camera8Duration: 5
+  camera7Duration: 2.5
+  camera8Duration: 2.5
   restrictTimelineToCamera: 0
   timelineCamera: 0
   playTimelineFromStart: 0
@@ -27979,7 +27984,7 @@ MonoBehaviour:
   burstFovRiseSeconds: 1
   burstFovFallSeconds: 1
   sequenceStartDelaySeconds: 0
-  sequenceDurationSeconds: 5
+  sequenceDurationSeconds: 2.5
   stopAtSequenceEnd: 1
   stopApplicationAtSequenceEnd: 0
   moveAxis: 3
@@ -28011,6 +28016,8 @@ MonoBehaviour:
   longitudinalOffsetTarget: {fileID: 0}
   longitudinalTargetGap: 4.5
   maximumAutomaticLongitudinalOffset: 30
+  useHudSpeedRetreat: 0
+  hudSpeedRetreatDistance: 2
   pressureTarget: {fileID: 0}
   pressureFollowingDistance: 5
   pressureForwardOffset: 0
@@ -32024,7 +32031,7 @@ MonoBehaviour:
   burstFovRiseSeconds: 1
   burstFovFallSeconds: 1
   sequenceStartDelaySeconds: 0
-  sequenceDurationSeconds: 5
+  sequenceDurationSeconds: 2.5
   stopAtSequenceEnd: 1
   stopApplicationAtSequenceEnd: 0
   moveAxis: 3
@@ -32056,6 +32063,8 @@ MonoBehaviour:
   longitudinalOffsetTarget: {fileID: 0}
   longitudinalTargetGap: 4.5
   maximumAutomaticLongitudinalOffset: 30
+  useHudSpeedRetreat: 0
+  hudSpeedRetreatDistance: 2
   pressureTarget: {fileID: 0}
   pressureFollowingDistance: 5
   pressureForwardOffset: 0
@@ -41479,7 +41488,7 @@ MonoBehaviour:
   burstFovRiseSeconds: 1
   burstFovFallSeconds: 1
   sequenceStartDelaySeconds: 0
-  sequenceDurationSeconds: 5
+  sequenceDurationSeconds: 2.5
   stopAtSequenceEnd: 1
   stopApplicationAtSequenceEnd: 0
   moveAxis: 1
@@ -41511,6 +41520,8 @@ MonoBehaviour:
   longitudinalOffsetTarget: {fileID: 0}
   longitudinalTargetGap: 4.5
   maximumAutomaticLongitudinalOffset: 30
+  useHudSpeedRetreat: 0
+  hudSpeedRetreatDistance: 2
   pressureTarget: {fileID: 0}
   pressureFollowingDistance: 5
   pressureForwardOffset: 0
@@ -51432,7 +51443,7 @@ MonoBehaviour:
   burstFovRiseSeconds: 1
   burstFovFallSeconds: 1
   sequenceStartDelaySeconds: 0
-  sequenceDurationSeconds: 5
+  sequenceDurationSeconds: 2.5
   stopAtSequenceEnd: 1
   stopApplicationAtSequenceEnd: 0
   moveAxis: 3
@@ -51464,6 +51475,8 @@ MonoBehaviour:
   longitudinalOffsetTarget: {fileID: 0}
   longitudinalTargetGap: 4.5
   maximumAutomaticLongitudinalOffset: 30
+  useHudSpeedRetreat: 0
+  hudSpeedRetreatDistance: 2
   pressureTarget: {fileID: 0}
   pressureFollowingDistance: 5
   pressureForwardOffset: 0
@@ -70838,7 +70851,7 @@ MonoBehaviour:
   burstFovRiseSeconds: 1
   burstFovFallSeconds: 1
   sequenceStartDelaySeconds: 0
-  sequenceDurationSeconds: 5
+  sequenceDurationSeconds: 2.5
   stopAtSequenceEnd: 1
   stopApplicationAtSequenceEnd: 0
   moveAxis: 1
@@ -70870,6 +70883,8 @@ MonoBehaviour:
   longitudinalOffsetTarget: {fileID: 0}
   longitudinalTargetGap: 4.5
   maximumAutomaticLongitudinalOffset: 30
+  useHudSpeedRetreat: 0
+  hudSpeedRetreatDistance: 2
   pressureTarget: {fileID: 0}
   pressureFollowingDistance: 5
   pressureForwardOffset: 0
@@ -91498,7 +91513,7 @@ MonoBehaviour:
   showOnlyWhilePlaying: 1
   restrictToOwningCamera: 1
   owningCamera: 6
-  timerStartSeconds: 61
+  timerStartSeconds: 126.341
   useTimedCinematicProgress: 1
   playerStartProgressPercent: 34
   playerFirstPercentDelay: 0.25
@@ -91509,8 +91524,8 @@ MonoBehaviour:
   greenSharesPlayerTimedProgress: 0
   useRankBasedExtraTimedProgress: 0
   useRankBasedStartingProgress: 0
-  leaderStartProgressPercent: 66
-  rankStartProgressStepPercent: 1
+  leaderStartProgressPercent: 73
+  rankStartProgressStepPercent: 2
   usePostBlueOvertakeRankProgress: 1
   postBlueOvertakeLeaderPercent: 36
   useFixedBlueTimedProgress: 1
@@ -91525,14 +91540,16 @@ MonoBehaviour:
   enableFrameLightReflection: 1
   frameLightReflectionIntensity: 0.9
   frameLightReflectionSpeed: 0.18
-  currentEngine: 98
+  useTwoSecondHudSequence: 1
+  cinematicHudDurationSeconds: 2.5
+  currentEngine: 91
   useTimedBoostConsumption: 0
   timedBoostStartSeconds: 1
   timedBoostDurationSeconds: 2
   timedBoostEndPercent: 33
   currentCoolant: 90
-  currentFuel: 86
-  currentBoost: 48
+  currentFuel: 54
+  currentBoost: 61
 --- !u!114 &909247482
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -129692,7 +129709,7 @@ MonoBehaviour:
   burstFovRiseSeconds: 1
   burstFovFallSeconds: 1
   sequenceStartDelaySeconds: 0
-  sequenceDurationSeconds: 5
+  sequenceDurationSeconds: 2.5
   stopAtSequenceEnd: 1
   stopApplicationAtSequenceEnd: 0
   moveAxis: 1
@@ -129724,6 +129741,8 @@ MonoBehaviour:
   longitudinalOffsetTarget: {fileID: 0}
   longitudinalTargetGap: 4.5
   maximumAutomaticLongitudinalOffset: 30
+  useHudSpeedRetreat: 0
+  hudSpeedRetreatDistance: 2
   pressureTarget: {fileID: 0}
   pressureFollowingDistance: 5
   pressureForwardOffset: 0
@@ -137064,7 +137083,7 @@ MonoBehaviour:
   burstFovRiseSeconds: 1
   burstFovFallSeconds: 1
   sequenceStartDelaySeconds: 0
-  sequenceDurationSeconds: 5
+  sequenceDurationSeconds: 2.5
   stopAtSequenceEnd: 1
   stopApplicationAtSequenceEnd: 0
   moveAxis: 3
@@ -137096,6 +137115,8 @@ MonoBehaviour:
   longitudinalOffsetTarget: {fileID: 0}
   longitudinalTargetGap: 4.5
   maximumAutomaticLongitudinalOffset: 30
+  useHudSpeedRetreat: 0
+  hudSpeedRetreatDistance: 2
   pressureTarget: {fileID: 0}
   pressureFollowingDistance: 5
   pressureForwardOffset: 0
@@ -139469,7 +139490,7 @@ MonoBehaviour:
   burstFovRiseSeconds: 1
   burstFovFallSeconds: 1
   sequenceStartDelaySeconds: 0
-  sequenceDurationSeconds: 5
+  sequenceDurationSeconds: 2.5
   stopAtSequenceEnd: 1
   stopApplicationAtSequenceEnd: 0
   moveAxis: 3
@@ -139501,6 +139522,8 @@ MonoBehaviour:
   longitudinalOffsetTarget: {fileID: 1843038794}
   longitudinalTargetGap: 4.5
   maximumAutomaticLongitudinalOffset: 30
+  useHudSpeedRetreat: 0
+  hudSpeedRetreatDistance: 2
   pressureTarget: {fileID: 0}
   pressureFollowingDistance: 5
   pressureForwardOffset: 0
@@ -202264,7 +202287,7 @@ MonoBehaviour:
   burstFovRiseSeconds: 1
   burstFovFallSeconds: 1
   sequenceStartDelaySeconds: 0
-  sequenceDurationSeconds: 5
+  sequenceDurationSeconds: 2.5
   stopAtSequenceEnd: 1
   stopApplicationAtSequenceEnd: 1
   moveAxis: 3
@@ -202296,6 +202319,8 @@ MonoBehaviour:
   longitudinalOffsetTarget: {fileID: 0}
   longitudinalTargetGap: 4.5
   maximumAutomaticLongitudinalOffset: 30
+  useHudSpeedRetreat: 0
+  hudSpeedRetreatDistance: 2
   pressureTarget: {fileID: 0}
   pressureFollowingDistance: 5
   pressureForwardOffset: 0
@@ -202677,6 +202702,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1844220487}
   - component: {fileID: 1844220489}
+  - component: {fileID: 9100000000000000502}
   - component: {fileID: 1844220488}
   - component: {fileID: 9100000000000000310}
   m_Layer: 0
@@ -205869,30 +205895,30 @@ MonoBehaviour:
   burstFovRiseSeconds: 1
   burstFovFallSeconds: 1
   sequenceStartDelaySeconds: 0
-  sequenceDurationSeconds: 5
+  sequenceDurationSeconds: 2.5
   stopAtSequenceEnd: 1
   stopApplicationAtSequenceEnd: 1
   moveAxis: 1
   space: 1
   customDirection: {x: 1, y: 0, z: 0}
   enableSingleLaneMove: 1
-  laneMoveAmplitudeZ: -3.6
+  laneMoveAmplitudeZ: -4.2
   weaveBothSides: 0
   useTimedLaneMove: 1
-  laneMoveStartSeconds: 2
-  laneMoveInSeconds: 0.9
+  laneMoveStartSeconds: 0.8
+  laneMoveInSeconds: 0.5
   useLaneApproachPhase: 0
   laneApproachRatio: 0.25
-  laneFightInSeconds: 0.9
-  laneHoldSeconds: 0.35
-  laneMoveOutSeconds: 1.1
+  laneFightInSeconds: 0.36
+  laneHoldSeconds: 0.14
+  laneMoveOutSeconds: 0.6
   keepLaneOffsetAtEnd: 1
   useLanePushCounter: 1
-  laneCounterFinalRatio: -0.35
+  laneCounterFinalRatio: -0.3
   laneSeparationTarget: {fileID: 0}
   laneSeparationPadding: 0.2
   maximumLaneYaw: 5
-  laneYawResponseTime: 0.25
+  laneYawResponseTime: 0.14
   useTimedLongitudinalOffset: 0
   longitudinalOffsetStartSeconds: 0
   longitudinalOffsetDurationSeconds: 0.6
@@ -205901,6 +205927,8 @@ MonoBehaviour:
   longitudinalOffsetTarget: {fileID: 0}
   longitudinalTargetGap: 4.5
   maximumAutomaticLongitudinalOffset: 30
+  useHudSpeedRetreat: 1
+  hudSpeedRetreatDistance: 2
   pressureTarget: {fileID: 0}
   pressureFollowingDistance: 5
   pressureForwardOffset: 0
@@ -307747,13 +307775,13 @@ MonoBehaviour:
   initialSpeedKmh: 300
   targetSpeedKmh: 300
   accelerationKmh: 0
-  useAccelerationBurst: 1
+  useAccelerationBurst: 0
   burstCruiseSpeedKmh: 300
   burstPeakSpeedKmh: 330
   burstStartSeconds: 0
-  burstRampUpSeconds: 0.45
-  burstHoldSeconds: 0.45
-  burstRampDownSeconds: 0.45
+  burstRampUpSeconds: 0.18
+  burstHoldSeconds: 0.18
+  burstRampDownSeconds: 0.18
   accelerationTransformation: {fileID: 0}
   animateCameraFovDuringBurst: 0
   burstCamera: {fileID: 0}
@@ -307762,7 +307790,7 @@ MonoBehaviour:
   burstFovRiseSeconds: 1
   burstFovFallSeconds: 1
   sequenceStartDelaySeconds: 0
-  sequenceDurationSeconds: 5
+  sequenceDurationSeconds: 2.5
   stopAtSequenceEnd: 1
   stopApplicationAtSequenceEnd: 0
   moveAxis: 1
@@ -307772,28 +307800,30 @@ MonoBehaviour:
   laneMoveAmplitudeZ: -8.5
   weaveBothSides: 0
   useTimedLaneMove: 1
-  laneMoveStartSeconds: 0.35
-  laneMoveInSeconds: 1.65
+  laneMoveStartSeconds: 0.14
+  laneMoveInSeconds: 0.66
   useLaneApproachPhase: 1
   laneApproachRatio: 0.25
-  laneFightInSeconds: 0.9
-  laneHoldSeconds: 0.35
-  laneMoveOutSeconds: 1.1
+  laneFightInSeconds: 0.5
+  laneHoldSeconds: 0.14
+  laneMoveOutSeconds: 0.6
   keepLaneOffsetAtEnd: 1
   useLanePushCounter: 1
   laneCounterFinalRatio: 0.68
   laneSeparationTarget: {fileID: 1881816130}
   laneSeparationPadding: 0
   maximumLaneYaw: 6
-  laneYawResponseTime: 0.2
+  laneYawResponseTime: 0.12
   useTimedLongitudinalOffset: 1
   longitudinalOffsetStartSeconds: 0
-  longitudinalOffsetDurationSeconds: 1.35
-  longitudinalOffsetDistance: 0.5
-  calculateLongitudinalOffsetFromTarget: 0
+  longitudinalOffsetDurationSeconds: 0.8
+  longitudinalOffsetDistance: 0
+  calculateLongitudinalOffsetFromTarget: 1
   longitudinalOffsetTarget: {fileID: 1881816130}
-  longitudinalTargetGap: 4.5
+  longitudinalTargetGap: 0
   maximumAutomaticLongitudinalOffset: 30
+  useHudSpeedRetreat: 0
+  hudSpeedRetreatDistance: 2
   pressureTarget: {fileID: 0}
   pressureFollowingDistance: 5
   pressureForwardOffset: 0
@@ -351233,7 +351263,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::CockpitDisplayController
   speedController: {fileID: 1843038794}
   hudController: {fileID: 44466610}
-  refreshInterval: 0.05
+  refreshInterval: 0
 --- !u!114 &9100000000000000310
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -351269,6 +351299,52 @@ MonoBehaviour:
   curvature: 0.095
   curvedShader: {fileID: 0}
   cinematicFirstPerson: 1
+--- !u!114 &9100000000000000501
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 173174922}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 17fa63fb0dd54a1e9809b37c6e6a5d24, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::RacingRoadCameraShake
+  hudController: {fileID: 909247481}
+  speedController: {fileID: 1881816130}
+  intensity: 4
+  lowSpeedKmh: 100
+  boostMultiplier: 1.3
+  responseSeconds: 0.15
+  firstPersonIntensitySteps: 6
+  firstPersonStartingStrength: 0.5
+  positionAmplitude: {x: 0.004, y: 0.008, z: 0.001}
+  rotationAmplitude: {x: 0.12, y: 0.07, z: 0.06}
+  frequency: 9
+--- !u!114 &9100000000000000502
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1844220486}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 17fa63fb0dd54a1e9809b37c6e6a5d24, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::RacingRoadCameraShake
+  hudController: {fileID: 44466610}
+  speedController: {fileID: 1843038794}
+  intensity: 5
+  lowSpeedKmh: 367
+  boostMultiplier: 1.3
+  responseSeconds: 0.08
+  firstPersonIntensitySteps: 6
+  firstPersonStartingStrength: 0.5
+  positionAmplitude: {x: 0.0015, y: 0.003, z: 0.0005}
+  rotationAmplitude: {x: 0.2, y: 0.12, z: 0.08}
+  frequency: 9
 --- !u!4 &9102374081118514781
 Transform:
   m_ObjectHideFlags: 0

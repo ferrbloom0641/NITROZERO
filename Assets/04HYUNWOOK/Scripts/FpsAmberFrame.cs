@@ -24,7 +24,7 @@ namespace RacingUI
             get => lightReflectionSpeedValue;
             set
             {
-                float clamped = Mathf.Clamp(value, .02f, 1.5f);
+                float clamped = Mathf.Clamp(value, .02f, 4f);
                 if (Mathf.Approximately(lightReflectionSpeedValue, clamped)) return;
                 lightReflectionSpeedValue = clamped;
                 MarkDirtyRepaint();
@@ -143,7 +143,7 @@ namespace RacingUI
             Stroke(new[]{V(91,28),V(429,46),V(451,39),V(1221,39),V(1243,46),V(1581,28)},.7f,new Color(1,.51f,.12f,.25f));
             void Lit(float ax,float ay,float bx,float by,int count, bool mirror,
                 bool lower = false, float[] divisions = null, bool marker = false,
-                float reflectionStart = .82f, float reflectionEnd = .98f) {
+                float reflectionStart = .98f, float reflectionEnd = .82f) {
                 // Build in design space, then mirror the entire polygon (including its
                 // slanted ends). Reversing only a stroke made left/right cuts disagree.
                 Vector2 Map(Vector2 point) => V(mirror ? 1672f-point.x : point.x, point.y);
@@ -188,7 +188,9 @@ namespace RacingUI
                     Vector2 center=Vector2.zero;
                     for(int i=0;i<points.Length;i++)center+=points[i];
                     center/=points.Length;
-                    float reflection=FrameTileReflection(Mathf.Lerp(.02f,.72f,
+                    // Continue after the instrument's top rectangular markers,
+                    // outwards across the bottom, then up to the visor corner.
+                    float reflection=FrameTileReflection(Mathf.Lerp(.78f,.18f,
                         plateIndex/(float)(plateCount-1)));
                     plateIndex++;
                     void FillPlate(float expansion,Color color) {
@@ -230,11 +232,12 @@ namespace RacingUI
                 Vector2 Side(float x,float y)=>V(mirror?1672f-x:x,y);
                 Stroke(new[]{Side(97,795),Side(113,822)},1.8f,new Color(1,.57f,.13f,.85f));
             }
-            // Thin mirrored shoulder ticks sit just above the instrument rail.
+            // Begin on the mirrored rectangular markers above the speed readout.
+            // Their inner ends light first; continuous thin strokes remain unchanged.
             Lit(496,728,540,728,4,false,marker:true,
-                reflectionStart:.74f,reflectionEnd:.82f);
+                reflectionStart:.12f,reflectionEnd:0f);
             Lit(496,728,540,728,4,true,marker:true,
-                reflectionStart:.74f,reflectionEnd:.82f);
+                reflectionStart:.12f,reflectionEnd:0f);
             // The instrument owns the shoulder rails; do not draw a second floating outline here.
 
         }

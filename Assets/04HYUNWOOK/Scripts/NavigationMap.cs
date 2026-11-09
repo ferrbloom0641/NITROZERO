@@ -12,6 +12,10 @@ namespace RacingUI
         float routeFadeStartValue = .84f, routeFarOpacityValue = .42f;
         bool straightRouteValue;
         float lateral, heading, raceProgress, progressOffset = .075f;
+        float markerHorizontalOffset, markerHeading;
+        float markerVibrationPixels, routeTravelMetres;
+        bool revealUpcomingTurn;
+        bool animateStraightTravel;
         [UxmlAttribute] public bool amberRoute { get; set; }
         [UxmlAttribute] public bool referenceMarker { get; set; }
         Color mapTintValue = Color.clear;
@@ -52,6 +56,21 @@ namespace RacingUI
             progressOffset = Mathf.Clamp(forwardOffset, .05f, .10f);
             MarkDirtyRepaint();
         }
+        public void SetMarkerMotion(float horizontalOffset, float angle, float vibrationPixels = 0f)
+        {
+            // Lateral movement and vibration affect only the arrow, never the trail.
+            markerHorizontalOffset = Mathf.Clamp(horizontalOffset, -.025f, .025f);
+            markerHeading = Mathf.Clamp(angle, -18f, 18f);
+            markerVibrationPixels = Mathf.Clamp(vibrationPixels, 0f, 1.5f);
+            MarkDirtyRepaint();
+        }
+        public void SetRouteTravel(float metres, bool revealTurn, bool straightTravel = false)
+        {
+            routeTravelMetres = Mathf.Max(0f, metres);
+            revealUpcomingTurn = revealTurn;
+            animateStraightTravel = straightTravel;
+            MarkDirtyRepaint();
+        }
         Vector2 Project(float side, float depth)
         {
             Rect r = contentRect;
@@ -76,8 +95,19 @@ namespace RacingUI
                 // pierced the minimap frame.
                 return new Vector2(r.width * .5f, Mathf.Lerp(.86f, .12f, t) * r.height);
 
+            if (revealUpcomingTurn)
+            {
+                // Forward travel brings an initially off-screen bend down into view.
+                // The visible straight remains centred and its trail remains straight.
+                float y = Mathf.Lerp(1.04f, -.04f, t);
+                float bendY = Mathf.Min(.30f, -.10f + routeTravelMetres / 450f);
+                float turn = Mathf.Clamp01((bendY - y) / .30f);
+                float x = .5f - routeCurveAmountValue * 1.15f * turn * turn;
+                return new Vector2(x * r.width, y * r.height);
+            }
+
             const float turnStart = .56f;
-            float verticalX = .5f + routeCurveAmountValue * .55f;
+            float verticalX = .5f;
             Vector2 point;
             if (t <= turnStart)
             {
@@ -122,6 +152,23 @@ namespace RacingUI
                 p.Stroke();
             }
         }
+        void DrawStraightTravel(Painter2D p, Rect r)
+        {
+            if (!animateStraightTravel || !straightRouteValue) return;
+            // Distance-driven highlights flow towards the driver. When the car stops,
+            // the highlights stop too; the road and arrow remain straight and centred.
+            p.lineWidth = 2.2f;
+            for (int i = 0; i < 4; i++)
+            {
+                float travel = Mathf.Repeat(routeTravelMetres / 180f + i * .25f, 1f);
+                float opacity = Mathf.Sin(travel * Mathf.PI) * .65f;
+                p.strokeColor = new Color(1f, .90f, .60f, opacity);
+                p.BeginPath();
+                p.MoveTo(AmberRoutePoint(r, Mathf.Clamp01(1f - travel - .02f)));
+                p.LineTo(AmberRoutePoint(r, Mathf.Clamp01(1f - travel + .02f)));
+                p.Stroke();
+            }
+        }
         void DrawRoad(MeshGenerationContext context)
         {
             // Shared vertices avoid the antialiasing seams between separately painted strips.
@@ -163,36 +210,56 @@ namespace RacingUI
                 DrawAmberRoute(p, r, 9f, .06f);
                 DrawAmberRoute(p, r, 4.5f, .22f);
                 DrawAmberRoute(p, r, 2.6f, 1f);
+                DrawStraightTravel(p, r);
 
                 const float routeVerticalSpan = .78f;
-                const float markerBaseProgress = .14f;
-                float markerProgress = Mathf.Clamp(
+                bool fixedMarker = revealUpcomingTurn || animateStraightTravel;
+                float markerBaseProgress = revealUpcomingTurn ? .18f : .14f;
+                float markerProgress = fixedMarker ? markerBaseProgress : Mathf.Clamp(
                     markerBaseProgress + raceProgress * progressOffset / routeVerticalSpan,
-                    .14f, .82f);
-                var markerBase = AmberRoutePoint(r, markerBaseProgress);
+                    markerBaseProgress, .82f);
+                // Keep the navigation arrow anchored while the route scrolls ahead.
+                // Its straight trail grows behind it instead of dragging the arrow.
+                float trailStartProgress = fixedMarker
+                    ? Mathf.Max(.10f, markerBaseProgress - raceProgress * progressOffset / routeVerticalSpan)
+                    : markerBaseProgress;
+                var markerBase = AmberRoutePoint(r, trailStartProgress);
                 var markerAt = AmberRoutePoint(r, markerProgress);
-                if (Vector2.Distance(markerBase, markerAt) > .5f) {
-                    p.lineWidth = 3f;
-                    p.strokeColor = new Color(1f,.55f,.13f,.75f);
-                    const int trailSegments = 12;
-                    p.BeginPath();
-                    p.MoveTo(markerBase);
-                    for (int i = 1; i <= trailSegments; i++)
-                        p.LineTo(AmberRoutePoint(r, Mathf.Lerp(
-                            markerBaseProgress, markerProgress, i / (float)trailSegments)));
-                    p.Stroke();
-                }
                 float sz=referenceMarker?15:11;
+                Vector2 routeMarkerAt = markerAt;
                 const float tangentSample = .012f;
                 Vector2 routeBefore = AmberRoutePoint(r,
                     Mathf.Max(.001f, markerProgress - tangentSample));
                 Vector2 routeAfter = AmberRoutePoint(r,
                     Mathf.Min(.999f, markerProgress + tangentSample));
                 Vector2 routeDirection = (routeAfter - routeBefore).normalized;
+                float vibration = Application.isPlaying
+                    ? Mathf.Sin(Time.time * Mathf.PI * 13f) * markerVibrationPixels * r.height / 175f : 0f;
+                markerAt += routeDirection * vibration;
+                float margin = Mathf.Min(sz * 1.5f, Mathf.Min(r.width, r.height) * .5f);
+                markerAt.x = Mathf.Clamp(markerAt.x + markerHorizontalOffset * r.width, margin, r.width - margin);
+                markerAt.y = Mathf.Clamp(markerAt.y, margin, r.height - margin);
+                if (Vector2.Distance(markerBase, routeMarkerAt) > .5f) {
+                    p.lineWidth = 3f;
+                    p.strokeColor = new Color(1f,.55f,.13f,.75f);
+                    const int trailSegments = 12;
+                    p.BeginPath();
+                    p.MoveTo(markerBase);
+                    for (int i = 1; i <= trailSegments; i++)
+                    {
+                        float trailProgress = i / (float)trailSegments;
+                        p.LineTo(AmberRoutePoint(r, Mathf.Lerp(trailStartProgress, markerProgress, trailProgress)));
+                    }
+                    p.Stroke();
+                }
                 float routeAngle = Mathf.Atan2(routeDirection.y, routeDirection.x) *
                     Mathf.Rad2Deg + 90f;
                 var rot=Quaternion.Euler(0,0,routeAngle);
-                Vector2 Offset(float x,float y)=>markerAt+(Vector2)(rot*new Vector3(x,y,0));
+                // Keep all forward tips and the centre fixed. Only the rear wings
+                // flex with the car's lateral maneuver; the road trail never bends.
+                float rearShear = -Mathf.Tan(markerHeading * Mathf.Deg2Rad);
+                Vector2 Offset(float x,float y)=>markerAt+(Vector2)(rot*new Vector3(
+                    x + rearShear * Mathf.Max(0f, y), y, 0));
                 Quad(p,new Color(1,.5f,.1f,1),Offset(-sz,sz*.7f),Offset(0,-sz),Offset(sz,sz*.7f),Offset(0,sz*.25f));
                 if(referenceMarker){
                     Quad(p,new Color(1,.70f,.30f,1),Offset(-sz*.64f,sz*.42f),Offset(0,-sz*.70f),Offset(sz*.64f,sz*.42f),Offset(0,0));

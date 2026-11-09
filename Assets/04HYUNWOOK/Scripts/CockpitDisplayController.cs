@@ -35,6 +35,9 @@ public sealed class CockpitDisplayController : MonoBehaviour
     Surface dash;
     Surface tunnel;
     float nextRefresh;
+    bool hasDisplaySample;
+    Vector3Int lastClusterValues, lastTunnelValues;
+    Vector2Int lastDashValues;
 
     static readonly Dictionary<char, int[]> Font = new Dictionary<char, int[]>
     {
@@ -59,7 +62,8 @@ public sealed class CockpitDisplayController : MonoBehaviour
         RefreshDisplays();
     }
 
-    void Update()
+    // Read after RacingHudController.Update so both displays use this frame's values.
+    void LateUpdate()
     {
         if (!Application.isPlaying) return;
         // Camera 7 차량 세트가 화면에 있을 때 Camera 8의 고해상도 실내
@@ -76,6 +80,21 @@ public sealed class CockpitDisplayController : MonoBehaviour
     }
 
     void OnDisable()
+    {
+        if (cluster?.renderer != null) cluster.renderer.SetPropertyBlock(null);
+        if (dash?.renderer != null) dash.renderer.SetPropertyBlock(null);
+        if (tunnel?.renderer != null) tunnel.renderer.SetPropertyBlock(null);
+    }
+
+    void OnEnable()
+    {
+        if (cluster != null) ApplyTexture(cluster);
+        if (dash != null) ApplyTexture(dash);
+        if (tunnel != null) ApplyTexture(tunnel);
+        nextRefresh = 0f;
+    }
+
+    void OnDestroy()
     {
         Restore(cluster); Restore(dash); Restore(tunnel);
     }
@@ -147,19 +166,31 @@ public sealed class CockpitDisplayController : MonoBehaviour
 
     void RefreshDisplays()
     {
-        float speed = speedController != null ? speedController.DisplaySpeedKmh : 0f;
-        int gear = speedController != null ? speedController.CurrentGear : 1;
+        float speed = hudController != null ? hudController.CurrentSpeedKmh
+            : speedController != null ? speedController.DisplaySpeedKmh : 0f;
+        int gear = hudController != null ? hudController.CurrentGear
+            : speedController != null ? speedController.CurrentGear : 1;
+        float rpm = hudController != null ? hudController.CurrentRpm / 9f
+            : Mathf.Clamp01((speed % 50f) / 50f);
         float coolant = hudController != null ? hudController.CurrentCoolantValue : 95f;
         float fuel = hudController != null ? hudController.CurrentFuelValue : 74f;
         float boost = hudController != null ? hudController.CurrentBoostValue : 66f;
         float timer = hudController != null ? hudController.CurrentTimerSeconds : 76f;
 
-        DrawCluster(speed, gear);
-        DrawDash(coolant, fuel, boost);
-        DrawTunnel(timer, coolant);
+        // Check every frame, but upload each panel only when its visible values change.
+        var clusterValues = new Vector3Int(Mathf.RoundToInt(speed), Mathf.RoundToInt(Mathf.Clamp01(rpm) * 31f), Mathf.RoundToInt(fuel));
+        var dashValues = new Vector2Int(Mathf.RoundToInt(fuel), Mathf.RoundToInt(boost));
+        var tunnelValues = new Vector3Int(Mathf.FloorToInt(timer * 1000f), gear, Mathf.RoundToInt(coolant));
+        if (!hasDisplaySample || clusterValues != lastClusterValues) DrawCluster(speed, rpm);
+        if (!hasDisplaySample || dashValues != lastDashValues) DrawDash(coolant, fuel, boost);
+        if (!hasDisplaySample || tunnelValues != lastTunnelValues) DrawTunnel(timer, coolant, gear);
+        lastClusterValues = clusterValues;
+        lastDashValues = dashValues;
+        lastTunnelValues = tunnelValues;
+        hasDisplaySample = true;
     }
 
-    void DrawCluster(float speed, int gear)
+    void DrawCluster(float speed, float rpm)
     {
         if (cluster == null) return;
         RestoreOriginal(cluster);
@@ -168,14 +199,13 @@ public sealed class CockpitDisplayController : MonoBehaviour
         Rect(cluster, 92, 42, 350, 225, Background);
         Seven(cluster, Mathf.RoundToInt(speed).ToString("000"), 105, 58, 90, 180, 18, 12, Amber);
 
-        // 원본 TACHOMETER 막대 영역을 현재 단수 내 속도 비율로 다시 그립니다.
+        // 화면 UI와 같은 RPM 비율을 원본 TACHOMETER 영역에 표시합니다.
         Rect(cluster, 492, 115, 785, 83, Background);
-        float rpm = Mathf.Clamp01((speed % 50f) / 50f);
         for (int i = 0; i < 31; i++)
         {
             int barHeight = 18 + Mathf.RoundToInt(i * 1.55f);
             Rect(cluster, 500 + i * 25, 191 - barHeight, 15, barHeight,
-                i / 30f <= rpm ? Amber : DimAmber);
+                i < Mathf.RoundToInt(Mathf.Clamp01(rpm) * 31f) ? Amber : DimAmber);
         }
 
         // 원본 우측 연료 수치 위치를 유지합니다.
@@ -209,18 +239,20 @@ public sealed class CockpitDisplayController : MonoBehaviour
             Rect(surface, x + i * 20, y, 13, 22, i < active ? Amber : DimAmber);
     }
 
-    void DrawTunnel(float timer, float coolant)
+    void DrawTunnel(float timer, float coolant, int gear)
     {
         if (tunnel == null) return;
         RestoreOriginal(tunnel);
 
         // LAP 시간, GEAR, WATER 영역에 각각 타이머/기어/냉각수를 반영합니다.
         Rect(tunnel, 45, 38, 290, 104, Background);
-        Seven(tunnel, timer.ToString("000.0"), 50, 47, 48, 82, 10, 7, Amber);
+        string timerText = $"{(int)(timer / 60f):D2}:{(int)(timer % 60f):D2}.{(int)((timer * 1000f) % 1000f):D3}";
+        Seven(tunnel, timerText, 50, 47, 30, 82, 5, 4, Amber);
 
         Rect(tunnel, 540, 38, 90, 128, Background);
-        Seven(tunnel, Mathf.Clamp(speedController != null ? speedController.CurrentGear : 1, 1, 6).ToString(),
-            550, 45, 70, 115, 14, 0, Amber);
+        // Fit two-digit gears in the existing panel without imposing a six-gear cap.
+        int gearWidth = gear >= 10 ? 32 : 70;
+        Seven(tunnel, gear.ToString(), 550, 45, gearWidth, 115, gear >= 10 ? 7 : 14, 4, Amber);
 
         Rect(tunnel, 118, 227, 112, 66, Background);
         Seven(tunnel, Mathf.RoundToInt(coolant).ToString("000"), 124, 232, 29, 55, 7, 6, Amber);

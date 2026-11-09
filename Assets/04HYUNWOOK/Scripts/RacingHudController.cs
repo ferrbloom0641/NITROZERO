@@ -84,7 +84,14 @@ public class RacingHudController : MonoBehaviour
     [InspectorName("빛 반사 밝기")]
     [Range(0f,3f)] [SerializeField] private float frameLightReflectionIntensity = .9f;
     [InspectorName("빛 반사 이동 속도")]
-    [Range(.02f,1.5f)] [SerializeField] private float frameLightReflectionSpeed = .18f;
+    [Range(.02f,4f)] [SerializeField] private float frameLightReflectionSpeed = .18f;
+    [Header("레이싱 수치 연출")]
+    [InspectorName("카메라 7·8 수치 연출 사용")]
+    [Tooltip("차량 주행은 유지하고 화면 UI와 실내 계기판에 같은 연출 수치를 표시합니다.")]
+    [SerializeField] private bool useTwoSecondHudSequence;
+    [InspectorName("수치 연출 전체 시간 (초)")]
+    [Tooltip("기존 2초 연출의 변화폭을 유지하면서 모든 수치의 변화 시간을 비례 조절합니다.")]
+    [Min(.1f)] [SerializeField] private float cinematicHudDurationSeconds = 2f;
     [SerializeField] private float currentEngine = 98f;
     [SerializeField] private bool useTimedBoostConsumption;
     [SerializeField] private float timedBoostStartSeconds = 1f;
@@ -92,6 +99,14 @@ public class RacingHudController : MonoBehaviour
     [SerializeField] private float timedBoostEndPercent = 33f;
     private float timedProgressElapsed, nextSpeedReadoutTime;
     private bool runtimeInitialized, blueHasOvertakenPlayer;
+    private bool wasHudVisible;
+    private VehicleData[] cinematicInitialOrder;
+    private bool hasFirstPersonDistanceSample;
+    private Vector3 previousDistancePosition;
+    private float firstPersonRemainingDistance;
+    private bool hasMinimapTravelSample;
+    private Vector3 previousMinimapPosition;
+    private float minimapTravelMetres;
     private VehicleData blueRivalVehicle;
     private VisualElement boundRoot, engineFill;
     private RacingUI.DigitalReadout engineValueLabel;
@@ -99,10 +114,23 @@ public class RacingHudController : MonoBehaviour
     private readonly List<VisualElement> vibrationPanels = new List<VisualElement>();
     private readonly List<VisualElement> instrumentContents = new List<VisualElement>();
     public float CurrentTimerSeconds => currentTimer;
-    public float CurrentEngineValue => currentEngine;
-    public float CurrentCoolantValue => currentCoolant;
-    public float CurrentFuelValue => currentFuel;
+    // All HUD instruments and cockpit displays share this two-second authored clock.
+    public float CinematicTimeScale => useTwoSecondHudSequence
+        ? 2f / Mathf.Max(.1f, cinematicHudDurationSeconds) : 1f;
+    public float CinematicSequenceProgress => Mathf.Clamp01(timedProgressElapsed / 2f);
+    public float CurrentSpeedKmh => displayedSpeedKmh;
+    public int CurrentGear { get; private set; } = 1;
+    public float CurrentRpm { get; private set; }
+    public float CurrentEngineValue => !useTwoSecondHudSequence ? currentEngine : IsFirstPersonHud
+        ? currentEngine + timedProgressElapsed : EvaluateThirdPersonEngine(timedProgressElapsed);
+    public float CurrentCoolantValue => !useTwoSecondHudSequence ? currentCoolant : IsFirstPersonHud
+        ? currentCoolant + timedProgressElapsed : EvaluateThirdPersonCoolant();
+    public float CurrentFuelValue => Mathf.Max(0f, currentFuel - (useTwoSecondHudSequence ? timedProgressElapsed : 0f));
     public float CurrentBoostValue { get; private set; }
+    public bool IsBoostConsuming => useTwoSecondHudSequence
+        ? IsFirstPersonHud && CurrentBoostValue > 0f
+        : useTimedBoostConsumption && timedProgressElapsed >= timedBoostStartSeconds &&
+            timedProgressElapsed < timedBoostStartSeconds + timedBoostDurationSeconds;
     public float PlayerProgressPercent { get; private set; }
     public int PlayerRank { get; private set; } = 1;
     public bool IsFirstPerson => IsFirstPersonHud;
@@ -196,6 +224,11 @@ public class RacingHudController : MonoBehaviour
         timedProgressElapsed = 0f;
         nextSpeedReadoutTime = 0f;
         blueHasOvertakenPlayer = false;
+        wasHudVisible = false;
+        cinematicInitialOrder = null;
+        hasFirstPersonDistanceSample = false;
+        hasMinimapTravelSample = false;
+        minimapTravelMetres = 0f;
         CurrentBoostValue = currentBoost;
         displayedSpeedKmh = 0f;
         hasDisplayedSpeedSample = false;
@@ -361,8 +394,22 @@ public class RacingHudController : MonoBehaviour
             BindVisualTree();
         }
         SetHudVisibility();
-        if (!IsHudVisible) return;
-        timedProgressElapsed += Time.deltaTime;
+        if (!IsHudVisible)
+        {
+            wasHudVisible = false;
+            hasFirstPersonDistanceSample = false;
+            hasMinimapTravelSample = false;
+            minimapTravelMetres = 0f;
+            return;
+        }
+        if (useTwoSecondHudSequence && !wasHudVisible)
+        {
+            timedProgressElapsed = 0f;
+            currentTimer = timerStartSeconds;
+            cinematicInitialOrder = null;
+        }
+        wasHudVisible = true;
+        timedProgressElapsed += Time.deltaTime * CinematicTimeScale;
         UpdateTimer();
         UpdateProgressAndMinimap();
         UpdateInstrumentCluster();
@@ -372,7 +419,9 @@ public class RacingHudController : MonoBehaviour
 
     private void UpdateTimer()
     {
-        currentTimer += Time.deltaTime;
+        currentTimer = useTwoSecondHudSequence
+            ? timerStartSeconds + timedProgressElapsed * 10f
+            : currentTimer + Time.deltaTime;
         int minutes = (int)(currentTimer / 60f);
         int seconds = (int)(currentTimer % 60f);
         int milliseconds = (int)((currentTimer * 1000f) % 1000f);
@@ -407,11 +456,13 @@ public class RacingHudController : MonoBehaviour
             blueRivalVehicle.currentX > playerVehicle.currentX) blueHasOvertakenPlayer = true;
         // X축 위치 기준 순위 정렬
         var sortedRank = vehicles.OrderByDescending(v => v.currentX).ToList();
+        if (useTwoSecondHudSequence) ApplyCinematicRanking(sortedRank);
         for (int i = 0; i < 6; i++)
         {
             if (i < sortedRank.Count)
             {
-                if (useTimedCinematicProgress) sortedRank[i].progressRatio = EvaluateTimedProgress(sortedRank[i], i);
+                if (useTimedCinematicProgress && !useTwoSecondHudSequence)
+                    sortedRank[i].progressRatio = EvaluateTimedProgress(sortedRank[i], i);
                 if (sortedRank[i] == playerVehicle)
                 {
                     PlayerRank = i + 1;
@@ -426,16 +477,68 @@ public class RacingHudController : MonoBehaviour
         if (playerVehicle != null && playerVehicle.transform != null)
         {
             float remainingDistance = Mathf.Max(0f, finishX - playerVehicle.currentX);
+            if (IsFirstPersonHud)
+            {
+                Vector3 position = playerVehicle.transform.position;
+                if (!hasFirstPersonDistanceSample)
+                {
+                    firstPersonRemainingDistance = remainingDistance;
+                    hasFirstPersonDistanceSample = true;
+                }
+                else
+                {
+                    // FPS travels towards decreasing world X. Count ground distance
+                    // travelled instead of subtracting its signed X from the finish.
+                    Vector3 travelled = position - previousDistancePosition;
+                    travelled.y = 0f;
+                    firstPersonRemainingDistance = Mathf.Max(0f, firstPersonRemainingDistance - travelled.magnitude);
+                }
+                previousDistancePosition = position;
+                remainingDistance = firstPersonRemainingDistance;
+            }
+            else hasFirstPersonDistanceSample = false;
             if (routeDistanceLabel != null)
                 routeDistanceLabel.text = $"DISTANCE LEFT: {remainingDistance:F0}m";
 
             if (navigationMap != null)
-                navigationMap.SetProgress(playerVehicle.progressRatio, arrowForwardOffset);
+            {
+                var motion = playerVehicle.midRaceSpeedController;
+                bool showManeuver = useTwoSecondHudSequence && !IsFirstPersonHud && motion != null;
+                bool showStraightTravel = useTwoSecondHudSequence && IsFirstPersonHud && useStraightMinimapRoute;
+                bool animateTravel = showManeuver || showStraightTravel;
+                if (animateTravel)
+                {
+                    Vector3 position = playerVehicle.transform.position;
+                    if (hasMinimapTravelSample)
+                    {
+                        Vector3 travelled = position - previousMinimapPosition;
+                        travelled.y = 0f;
+                        minimapTravelMetres += travelled.magnitude;
+                    }
+                    previousMinimapPosition = position;
+                    hasMinimapTravelSample = true;
+                }
+                else
+                {
+                    hasMinimapTravelSample = false;
+                    minimapTravelMetres = 0f;
+                }
+                navigationMap.SetRouteTravel(minimapTravelMetres, showManeuver, showStraightTravel);
+                navigationMap.SetProgress(animateTravel ? Mathf.Clamp01(minimapTravelMetres / 220f)
+                    : playerVehicle.progressRatio, arrowForwardOffset);
+                navigationMap.SetMarkerMotion(
+                    0f, showManeuver ? motion.HudLaneYaw * 3f : 0f, 0f);
+            }
         }
     }
 
     private void UpdateInstrumentCluster()
     {
+        if (useTwoSecondHudSequence)
+        {
+            UpdateCinematicInstrumentCluster();
+            return;
+        }
         if (playerVehicle == null) return;
 
         // CarSpeedController가 부모 Transform을 직접 이동하므로 자식 Rigidbody의
@@ -476,12 +579,14 @@ public class RacingHudController : MonoBehaviour
             ? playerVehicle.speedController.CurrentGear
             : Mathf.Clamp(Mathf.CeilToInt(speedKmH / 50f), 1, 6);
         if (gearValueLabel != null) gearValueLabel.text = gear.ToString();
+        CurrentGear = gear;
 
         // 50km/h 단위 내 게이지 계산 및 40km/h 이상 시 레드라인
         float speedInCurrentGear = speedKmH % 50f;
         if (speedKmH >= tachometerMaximum) speedInCurrentGear = 50f;
 
         float gearGaugeRatio = speedInCurrentGear / 50f;
+        CurrentRpm = gearGaugeRatio * 9f;
         int fillBarCount = Mathf.RoundToInt(gearGaugeRatio * 40f);
 
 
@@ -505,19 +610,166 @@ public class RacingHudController : MonoBehaviour
         }
     }
 
+    private static float SmoothValue(float from, float to, float time, float start, float end)
+    {
+        return Mathf.Lerp(from, to, Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(start, end, time)));
+    }
+
+    private float EvaluateThirdPersonCoolant()
+    {
+        // Replay each gear-linked temperature step half a real second later.
+        float delayedTime = timedProgressElapsed - .5f * CinematicTimeScale;
+        if (delayedTime < MidRaceSpeedController.ThirdPersonDownshiftProgress * 2f) return currentCoolant;
+        if (delayedTime < MidRaceSpeedController.ThirdPersonAccelerationProgress * 2f) return currentCoolant - 1f;
+        // Keep the extra warming step after recovery even when the upshift is delayed.
+        if (delayedTime < MidRaceSpeedController.ThirdPersonAccelerationProgress * 2f + .3f) return currentCoolant;
+        return currentCoolant + 1f;
+    }
+
+    private static float EvaluateThirdPersonEngine(float time)
+    {
+        // 91 -> 90 -> 91 -> 92; finish the requested sequence at two seconds.
+        if (time < .5f) return SmoothValue(91f, 90f, time, 0f, .5f);
+        if (time < 1.25f) return SmoothValue(90f, 91f, time, .5f, 1.25f);
+        return SmoothValue(91f, 92f, time, 1.25f, 2f);
+    }
+
+    private void UpdateCinematicInstrumentCluster()
+    {
+        float time = timedProgressElapsed;
+        if (IsFirstPersonHud)
+        {
+            // The authored two-second clock spans the full shot (currently 2.5s).
+            // Accelerate continuously to 500 without a settling dip or end oscillation.
+            displayedSpeedKmh = SmoothValue(367f, 500f, time, 0f, 2f);
+            CurrentGear = 7;
+            // Rise throughout the shot; the HUD and cockpit share the same RPM.
+            CurrentRpm = SmoothValue(2f, 9f, time, 0f, 2f);
+        }
+        else
+        {
+            // At 2.5 seconds: decelerate from 1.0 to 1.8, recovery ends at 2.25.
+            // Use the vehicle's shared phase boundaries for all instrument changes.
+            float downshiftStart = MidRaceSpeedController.ThirdPersonDownshiftProgress * 2f;
+            float accelerationStart = MidRaceSpeedController.ThirdPersonAccelerationProgress * 2f;
+            float cruiseStart = MidRaceSpeedController.ThirdPersonCruiseProgress * 2f;
+            // Complete one 300 -> 299 -> 300 cycle before the existing deceleration.
+            if (time < downshiftStart)
+                displayedSpeedKmh = 299.5f + .5f * Mathf.Cos(time / downshiftStart * Mathf.PI * 2f);
+            else if (time < accelerationStart) displayedSpeedKmh = SmoothValue(300f, 250f, time, downshiftStart, accelerationStart);
+            else if (time < cruiseStart) displayedSpeedKmh = SmoothValue(250f, 300f, time, accelerationStart, cruiseStart);
+            else displayedSpeedKmh = 297.5f + 2.5f * Mathf.Cos((time - cruiseStart) * Mathf.PI * 2f);
+            CurrentGear = 6;
+            // RPM retains its speed-phase timing and delays while the displayed gear stays fixed.
+            // 실제 초 단위 대기 시간
+            float initialDelay = 0f * CinematicTimeScale;
+            float dropDelay = 0f * CinematicTimeScale;
+            float finalDelay = 0f * CinematicTimeScale;
+
+            // 대기 후 남은 구간에서 사용하는 시간 비율
+            const float initialRiseRatio = 2f;
+            const float dropRatio = 3f;
+            const float finalRiseRatio = 50f;
+
+            if (time < downshiftStart)
+            {
+                float start = initialDelay;
+                float end = Mathf.Lerp(start, downshiftStart, initialRiseRatio);
+                CurrentRpm = SmoothValue(7f, 7.2f, time, start, end);
+            }
+            else if (time < accelerationStart)
+            {
+                float start = downshiftStart + dropDelay;
+                float end = Mathf.Lerp(start, accelerationStart, dropRatio);
+                CurrentRpm = SmoothValue(7f, 6f, time, start, end);
+            }
+            else
+            {
+                float start = accelerationStart + finalDelay;
+                float end = Mathf.Lerp(start, 2f, finalRiseRatio);
+                CurrentRpm = SmoothValue(6f, 8f, time, start, end);
+            }
+        }
+
+        // Both camera modes calculate above, then update the same visible readouts here.
+        hasDisplayedSpeedSample = true;
+        if (speedValueLabel != null) speedValueLabel.text = Mathf.RoundToInt(displayedSpeedKmh).ToString("D3");
+        if (gearValueLabel != null) gearValueLabel.text = CurrentGear.ToString();
+        int filled = Mathf.RoundToInt(Mathf.Clamp01(CurrentRpm / 9f) * rpmBars.Length);
+        for (int i = 0; i < rpmBars.Length; i++)
+        {
+            if (rpmBars[i] == null) continue;
+            rpmBars[i].style.backgroundColor = i >= 30
+                ? (Color)new Color32(207, 87, 14, 255) : (Color)new Color32(255, 155, 53, 255);
+            rpmBars[i].style.opacity = i < filled ? 1f : .12f;
+        }
+    }
+
+    private void ApplyCinematicRanking(List<VehicleData> sortedRank)
+    {
+        if (cinematicInitialOrder == null)
+        {
+            // Keep the FPS shot's initial leaders. TPS stages only the UI duel.
+            if (!IsFirstPersonHud)
+            {
+                sortedRank.Remove(playerVehicle);
+                sortedRank.Remove(blueRivalVehicle);
+                sortedRank.Insert(0, blueRivalVehicle);
+                sortedRank.Insert(0, playerVehicle);
+            }
+            cinematicInitialOrder = sortedRank.ToArray();
+        }
+
+        float time = timedProgressElapsed;
+        float leaderProgress = leaderStartProgressPercent + Mathf.Floor(time * 1.5f);
+        float blueLead = time < .75f ? SmoothValue(0f, 2f, time, .25f, .75f)
+            : time < 1.05f ? 2f : SmoothValue(2f, 0f, time, 1.05f, 1.75f);
+        var playerMotion = playerVehicle?.midRaceSpeedController;
+        bool useRetreatRanking = !IsFirstPersonHud && playerMotion != null && playerMotion.UsesHudSpeedRetreat;
+        if (useRetreatRanking) blueLead = 2f * playerMotion.HudSpeedRetreatRatio;
+        // Restore red to first only when its physical retreat has fully recovered,
+        // rather than switching early when the displayed percentage rounds down.
+        bool blueIsAhead = useRetreatRanking
+            ? playerMotion.IsHudSpeedRetreatInProgress : Mathf.RoundToInt(blueLead) > 0;
+        // Rotate the four lower positions by two, then reverse the original order.
+        // Both changes are visible before two seconds; neither FPS leader moves.
+        sortedRank.Clear();
+        for (int rank = 0; rank < cinematicInitialOrder.Length; rank++)
+        {
+            int originalRank = rank;
+            if (rank >= 2)
+            {
+                int lowerRank = rank - 2;
+                originalRank = 2 + (time < .65f ? lowerRank : time < 1.35f
+                    ? (lowerRank + 2) % 4 : 3 - lowerRank);
+            }
+            else if (!IsFirstPersonHud && blueIsAhead)
+                originalRank = 1 - rank;
+
+            VehicleData vehicle = cinematicInitialOrder[originalRank];
+            float progress = IsFirstPersonHud ? leaderProgress - rank * rankStartProgressStepPercent
+                : rank < 2 ? leaderProgress + (vehicle == blueRivalVehicle ? blueLead : 0f)
+                : leaderProgress - (rank - 1) * 2f;
+            vehicle.progressRatio = Mathf.Clamp01(progress / 100f);
+            sortedRank.Add(vehicle);
+        }
+    }
+
     private void UpdateGauges()
     {
-        if (engineValueLabel != null) engineValueLabel.text = $"{Mathf.RoundToInt(currentEngine)}";
-        if (engineFill != null) engineFill.style.width = Length.Percent(Mathf.Clamp(currentEngine,0f,100f));
-        CurrentBoostValue = useTimedBoostConsumption
+        if (engineValueLabel != null) engineValueLabel.text = $"{Mathf.RoundToInt(CurrentEngineValue)}";
+        if (engineFill != null) engineFill.style.width = Length.Percent(Mathf.Clamp(CurrentEngineValue,0f,100f));
+        CurrentBoostValue = useTwoSecondHudSequence
+            ? Mathf.Clamp(currentBoost + timedProgressElapsed * (IsFirstPersonHud ? -7.5f : 5f), 0f, 100f)
+            : useTimedBoostConsumption
             ? Mathf.Lerp(currentBoost, timedBoostEndPercent, Mathf.InverseLerp(timedBoostStartSeconds,
                 timedBoostStartSeconds + Mathf.Max(.01f,timedBoostDurationSeconds), timedProgressElapsed))
             : currentBoost;
-        if (coolantValueLabel != null) coolantValueLabel.text = $"{Mathf.RoundToInt(currentCoolant)}";
-        if (coolantFill != null) coolantFill.style.width = Length.Percent(Mathf.Clamp01(currentCoolant / 120f) * 100f);
+        if (coolantValueLabel != null) coolantValueLabel.text = $"{Mathf.RoundToInt(CurrentCoolantValue)}";
+        if (coolantFill != null) coolantFill.style.width = Length.Percent(Mathf.Clamp01(CurrentCoolantValue / 120f) * 100f);
 
-        if (fuelPercentLabel != null) fuelPercentLabel.text = $"{Mathf.RoundToInt(currentFuel)}";
-        if (fuelFill != null) fuelFill.style.width = Length.Percent(Mathf.Clamp01(currentFuel / 100f) * 100f);
+        if (fuelPercentLabel != null) fuelPercentLabel.text = $"{Mathf.RoundToInt(CurrentFuelValue)}";
+        if (fuelFill != null) fuelFill.style.width = Length.Percent(Mathf.Clamp01(CurrentFuelValue / 100f) * 100f);
 
         if (boostValueLabel != null) boostValueLabel.text = $"{Mathf.RoundToInt(CurrentBoostValue)}";
         if (boostFill != null) boostFill.style.width = Length.Percent(Mathf.Clamp01(CurrentBoostValue / 100f) * 100f);
@@ -564,7 +816,7 @@ public class RacingHudController : MonoBehaviour
         {
             helmetFrame.lightReflection = enableFrameLightReflection && IsFirstPersonHud;
             helmetFrame.lightReflectionIntensity = frameLightReflectionIntensity;
-            helmetFrame.lightReflectionSpeed = frameLightReflectionSpeed;
+            helmetFrame.lightReflectionSpeed = frameLightReflectionSpeed * CinematicTimeScale;
         }
     }
     public void SetGaugeValues(float engine, float coolant, float fuel, float boost)
